@@ -4,6 +4,7 @@ import MonthlyCalendar from "@/components/MonthlyCalendar";
 import Markdown from "@/components/Markdown";
 import Link from "next/link";
 import DeleteEntryForm from "@/components/DeleteEntryForm";
+import { isAuthorized } from "@/lib/auth";
 
 interface CalendarPageProps {
   searchParams: Promise<{
@@ -14,7 +15,10 @@ interface CalendarPageProps {
 export const revalidate = 0; // Disable static cache to reflect instant database updates
 
 export default async function CalendarPage({ searchParams }: CalendarPageProps) {
-  const params = await searchParams;
+  const [params, isAdmin] = await Promise.all([
+    searchParams,
+    isAuthorized(),
+  ]);
 
   // Default to today's local date YYYY-MM-DD
   const today = new Date();
@@ -91,7 +95,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             </div>
 
             {/* Quick Actions (if entry exists) */}
-            {entry && (
+            {entry && isAdmin && (
               <div className="flex items-center gap-3">
                 <Link
                   href={`/new?edit=${entry.id}`}
@@ -188,12 +192,14 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400 space-y-4">
               <p className="text-sm">No log entry found for this day.</p>
-              <Link
-                href={`/new?date=${selectedDateStr}`}
-                className="rounded-sm border border-gray-900 bg-gray-900 px-4 py-2 text-xs text-white hover:bg-gray-800 transition-colors font-medium"
-              >
-                + Write Log for {formattedSelectedDate}
-              </Link>
+              {isAdmin && (
+                <Link
+                  href={`/new?date=${selectedDateStr}`}
+                  className="rounded-sm border border-gray-900 bg-gray-900 px-4 py-2 text-xs text-white hover:bg-gray-800 transition-colors font-medium"
+                >
+                  + Write Log for {formattedSelectedDate}
+                </Link>
+              )}
             </div>
           )}
         </div>

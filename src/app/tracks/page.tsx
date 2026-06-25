@@ -1,10 +1,14 @@
 import { getTracks } from "../actions";
 import TracksClient from "./TracksClient";
+import { isAuthorized } from "@/lib/auth";
 
 export const revalidate = 0; // Disable static cache to reflect instant database updates
 
 export default async function TracksPage() {
-  const tracks = await getTracks();
+  const [tracks, isAdmin] = await Promise.all([
+    getTracks(),
+    isAuthorized(),
+  ]);
 
   // Cast prisma types to match the client component requirements
   const formattedTracks = tracks.map((track) => ({
@@ -18,5 +22,5 @@ export default async function TracksPage() {
     })),
   }));
 
-  return <TracksClient initialTracks={formattedTracks} />;
+  return <TracksClient initialTracks={formattedTracks} isAdmin={isAdmin} />;
 }

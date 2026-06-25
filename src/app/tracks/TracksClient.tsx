@@ -25,9 +25,10 @@ interface Track {
 
 interface TracksClientProps {
   initialTracks: Track[];
+  isAdmin?: boolean;
 }
 
-export default function TracksClient({ initialTracks }: TracksClientProps) {
+export default function TracksClient({ initialTracks, isAdmin = false }: TracksClientProps) {
   const [tracks, setTracks] = useState<Track[]>(initialTracks);
   const [newTrackName, setNewTrackName] = useState("");
   const [newSubtopicNames, setNewSubtopicNames] = useState<Record<string, string>>({});
@@ -121,23 +122,25 @@ export default function TracksClient({ initialTracks }: TracksClientProps) {
         </div>
 
         {/* Add Track Form */}
-        <form onSubmit={handleCreateTrack} className="flex gap-2 max-w-sm">
-          <input
-            type="text"
-            placeholder="Track Name (e.g. DSA)"
-            value={newTrackName}
-            onChange={(e) => setNewTrackName(e.target.value)}
-            disabled={isPending}
-            className="flex-1 rounded-sm border border-gray-300 px-3 py-1.5 text-sm bg-white focus:border-gray-900 focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-sm border border-gray-900 bg-gray-900 px-4 py-1.5 text-sm text-white hover:bg-gray-800 disabled:opacity-50 transition-colors font-medium cursor-pointer"
-          >
-            Add Track
-          </button>
-        </form>
+        {isAdmin && (
+          <form onSubmit={handleCreateTrack} className="flex gap-2 max-w-sm">
+            <input
+              type="text"
+              placeholder="Track Name (e.g. DSA)"
+              value={newTrackName}
+              onChange={(e) => setNewTrackName(e.target.value)}
+              disabled={isPending}
+              className="flex-1 rounded-sm border border-gray-300 px-3 py-1.5 text-sm bg-white focus:border-gray-900 focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rounded-sm border border-gray-900 bg-gray-900 px-4 py-1.5 text-sm text-white hover:bg-gray-800 disabled:opacity-50 transition-colors font-medium cursor-pointer"
+            >
+              Add Track
+            </button>
+          </form>
+        )}
       </div>
 
       {error && (
@@ -169,13 +172,15 @@ export default function TracksClient({ initialTracks }: TracksClientProps) {
                         {completedCount}/{totalCount} Completed ({percentage}%)
                       </span>
                     </div>
-                    <button
-                      onClick={() => handleDeleteTrack(track.id)}
-                      disabled={isPending}
-                      className="text-xs text-gray-400 hover:text-red-700 transition-colors cursor-pointer"
-                    >
-                      Delete Track
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteTrack(track.id)}
+                        disabled={isPending}
+                        className="text-xs text-gray-400 hover:text-red-700 transition-colors cursor-pointer"
+                      >
+                        Delete Track
+                      </button>
+                    )}
                   </div>
 
                   {/* Subtopics Checklist */}
@@ -212,7 +217,7 @@ export default function TracksClient({ initialTracks }: TracksClientProps) {
                                   e.target.value as SubtopicStatus
                                 )
                               }
-                              disabled={isPending}
+                              disabled={!isAdmin || isPending}
                               className={`text-xs border rounded-sm px-1.5 py-0.5 bg-white cursor-pointer ${
                                 subtopic.status === SubtopicStatus.DONE
                                   ? "border-emerald-200 text-emerald-800"
@@ -227,14 +232,16 @@ export default function TracksClient({ initialTracks }: TracksClientProps) {
                             </select>
 
                             {/* Delete Button */}
-                            <button
-                              onClick={() => handleDeleteSubtopic(subtopic.id)}
-                              disabled={isPending}
-                              className="text-gray-400 hover:text-red-700 text-xs px-1 cursor-pointer"
-                              title="Delete subtopic"
-                            >
-                              &times;
-                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDeleteSubtopic(subtopic.id)}
+                                disabled={isPending}
+                                className="text-gray-400 hover:text-red-700 text-xs px-1 cursor-pointer"
+                                title="Delete subtopic"
+                              >
+                                &times;
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))
@@ -243,31 +250,33 @@ export default function TracksClient({ initialTracks }: TracksClientProps) {
                 </div>
 
                 {/* Add Subtopic Form */}
-                <form
-                  onSubmit={(e) => handleCreateSubtopic(e, track.id)}
-                  className="flex gap-2 border-t border-gray-100 pt-4"
-                >
-                  <input
-                    type="text"
-                    placeholder="Add subtopic (e.g. Arrays)"
-                    value={newSubtopicNames[track.id] || ""}
-                    onChange={(e) =>
-                      setNewSubtopicNames((prev) => ({
-                        ...prev,
-                        [track.id]: e.target.value,
-                      }))
-                    }
-                    disabled={isPending}
-                    className="flex-1 rounded-sm border border-gray-200 px-2.5 py-1 text-xs bg-white focus:border-gray-900 focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="rounded-sm border border-gray-200 px-3 py-1 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors cursor-pointer"
+                {isAdmin && (
+                  <form
+                    onSubmit={(e) => handleCreateSubtopic(e, track.id)}
+                    className="flex gap-2 border-t border-gray-100 pt-4"
                   >
-                    Add
-                  </button>
-                </form>
+                    <input
+                      type="text"
+                      placeholder="Add subtopic (e.g. Arrays)"
+                      value={newSubtopicNames[track.id] || ""}
+                      onChange={(e) =>
+                        setNewSubtopicNames((prev) => ({
+                          ...prev,
+                          [track.id]: e.target.value,
+                        }))
+                      }
+                      disabled={isPending}
+                      className="flex-1 rounded-sm border border-gray-200 px-2.5 py-1 text-xs bg-white focus:border-gray-900 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="rounded-sm border border-gray-200 px-3 py-1 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  </form>
+                )}
               </div>
             );
           })}

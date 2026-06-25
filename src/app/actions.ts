@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { SubtopicStatus } from "@prisma/client";
+import { isAuthorized } from "@/lib/auth";
 
 // ==========================================
 // TRACKS & SUBTOPICS ACTIONS
@@ -25,6 +26,10 @@ export async function getTracks() {
 }
 
 export async function createTrack(name: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   if (!name || name.trim() === "") {
     throw new Error("Track name is required");
   }
@@ -45,6 +50,10 @@ export async function createTrack(name: string) {
 }
 
 export async function deleteTrack(id: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   try {
     await prisma.track.delete({
       where: { id },
@@ -60,6 +69,10 @@ export async function deleteTrack(id: string) {
 }
 
 export async function createSubtopic(trackId: string, name: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   if (!name || name.trim() === "") {
     throw new Error("Subtopic name is required");
   }
@@ -84,6 +97,10 @@ export async function createSubtopic(trackId: string, name: string) {
 }
 
 export async function deleteSubtopic(id: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   try {
     await prisma.subtopic.delete({
       where: { id },
@@ -103,6 +120,10 @@ export async function toggleSubtopicStatus(
   status: SubtopicStatus,
   completedAtDate: Date | null = null
 ) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   try {
     const completedAt = status === SubtopicStatus.DONE ? (completedAtDate || new Date()) : null;
 
@@ -172,6 +193,10 @@ export async function getSeriesWithEntries(id: string) {
 }
 
 export async function createSeries(name: string, description?: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   if (!name || name.trim() === "") {
     throw new Error("Series name is required");
   }
@@ -195,6 +220,10 @@ export async function createSeries(name: string, description?: string) {
 }
 
 export async function deleteSeries(id: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   try {
     await prisma.series.delete({
       where: { id },
@@ -314,6 +343,10 @@ export async function createEntry(data: {
   subtopicIds?: string[];
   tags?: string[];
 }) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   if (!data.content || data.content.trim() === "") {
     throw new Error("Entry content is required");
   }
@@ -377,6 +410,10 @@ export async function updateEntry(
     tags?: string[];
   }
 ) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   if (!data.content || data.content.trim() === "") {
     throw new Error("Entry content is required");
   }
@@ -444,6 +481,10 @@ export async function updateEntry(
 }
 
 export async function deleteEntry(id: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
   try {
     const entry = await prisma.entry.findUnique({
       where: { id },

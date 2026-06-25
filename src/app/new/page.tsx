@@ -1,5 +1,7 @@
 import { getSeries, getTracks, getEntryById } from "../actions";
 import EntryForm from "./EntryForm";
+import { isAuthorized } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 interface NewEntryPageProps {
   searchParams: Promise<{
@@ -12,6 +14,11 @@ interface NewEntryPageProps {
 export const revalidate = 0; // Disable static cache to reflect instant database updates
 
 export default async function NewEntryPage({ searchParams }: NewEntryPageProps) {
+  const isAdmin = await isAuthorized();
+  if (!isAdmin) {
+    redirect("/login");
+  }
+
   const params = await searchParams;
   const editId = params.edit;
   const defaultDate = params.date;
