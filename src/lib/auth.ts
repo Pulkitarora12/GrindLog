@@ -42,6 +42,8 @@ export async function isAuthorized(): Promise<boolean> {
 }
 
 export async function login(password: string): Promise<{ success: boolean; error?: string }> {
+  console.log("Auth attempt - ADMIN_PASSWORD is set:", !!process.env.ADMIN_PASSWORD, "SESSION_SECRET is set:", !!process.env.SESSION_SECRET);
+
   const expectedPassword = process.env.ADMIN_PASSWORD;
   if (!expectedPassword) {
     return { success: false, error: "Server is not configured for authentication" };
