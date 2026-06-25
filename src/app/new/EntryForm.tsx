@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createEntry, updateEntry } from "../actions";
-import { SubtopicStatus } from "@prisma/client";
+import { SubtopicStatus } from "@/lib/types";
 
 interface Subtopic {
   id: string;

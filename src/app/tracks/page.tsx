@@ -13,7 +13,7 @@ export default async function TracksPage() {
     subtopics: track.subtopics.map((s) => ({
       id: s.id,
       name: s.name,
-      status: s.status,
+      status: s.status as any,
       completedAt: s.completedAt,
     })),
   }));

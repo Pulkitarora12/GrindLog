@@ -8,7 +8,7 @@ import {
   deleteSubtopic,
   toggleSubtopicStatus,
 } from "../actions";
-import { SubtopicStatus } from "@prisma/client";
+import { SubtopicStatus } from "@/lib/types";
 
 interface Subtopic {
   id: string;

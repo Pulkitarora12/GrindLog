@@ -47,7 +47,7 @@ export default async function NewEntryPage({ searchParams }: NewEntryPageProps) 
         subtopics: t.subtopics.map((s) => ({
           id: s.id,
           name: s.name,
-          status: s.status,
+          status: s.status as any,
         })),
       }))}
       editingEntry={editingEntry}
