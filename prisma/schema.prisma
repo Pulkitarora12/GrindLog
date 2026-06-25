@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Track {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  subtopics   Subtopic[]
+}
+
+enum SubtopicStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+}
+
+model Subtopic {
+  id          String         @id @default(cuid())
+  name        String
+  status      SubtopicStatus @default(NOT_STARTED)
+  completedAt DateTime?
+  trackId     String
+  track       Track          @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  entries     Entry[]        @relation("EntryToSubtopic")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([trackId, name])
+}
+
+model Series {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  entries     Entry[]
+}
+
+model Entry {
+  id          String     @id @default(cuid())
+  date        DateTime   @default(now())
+  title       String?
+  content     String     // Markdown supported
+  seriesId    String?
+  series      Series?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  seriesDay   Int?       // Explicit sequential day in series (e.g. Day 47)
+  subtopics   Subtopic[] @relation("EntryToSubtopic")
+  tags        String[]   // General text tags (e.g., #rust, #sql)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
