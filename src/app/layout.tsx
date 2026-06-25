@@ -4,6 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import { isAuthorized, logout } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { PROFILE_LINKS } from "@/lib/links";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,7 +17,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "DevLog — Track & Log",
+  title: "GrindLog — Pulkit's Track & Log",
   description: "A personal productivity tracker and editorial blogging platform.",
 };
 
@@ -44,36 +45,78 @@ export default async function RootLayout({
           <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="font-serif text-2xl font-bold tracking-tight hover:opacity-80">
-              DevLog<span className="text-emerald-700">.</span>
+              GrindLog<span className="text-emerald-700">.</span>
             </Link>
 
-            {/* Navigation links */}
-            <nav className="flex items-center gap-6 text-sm font-medium text-gray-600">
-              <Link href="/" className="hover:text-gray-900 transition-colors">
-                Dashboard
-              </Link>
-              <Link href="/feed" className="hover:text-gray-900 transition-colors">
-                Feed
-              </Link>
-              <Link href="/calendar" className="hover:text-gray-900 transition-colors">
-                Calendar
-              </Link>
-              <Link href="/tracks" className="hover:text-gray-900 transition-colors">
-                Tracks
-              </Link>
-              <Link href="/series" className="hover:text-gray-900 transition-colors">
-                Series
-              </Link>
-              
-              {isAdmin && (
-                <Link
-                  href="/new"
-                  className="ml-2 inline-flex items-center justify-center rounded-sm border border-gray-900 bg-gray-900 px-3 py-1.5 text-xs text-white hover:bg-gray-800 transition-colors"
-                >
-                  + New Entry
+            {/* Navigation & Profile links */}
+            <div className="flex items-center gap-6">
+              <nav className="flex items-center gap-6 text-sm font-medium text-gray-600">
+                <Link href="/" className="hover:text-gray-900 transition-colors">
+                  Dashboard
                 </Link>
-              )}
-            </nav>
+                <Link href="/feed" className="hover:text-gray-900 transition-colors">
+                  Feed
+                </Link>
+                <Link href="/calendar" className="hover:text-gray-900 transition-colors">
+                  Calendar
+                </Link>
+                <Link href="/tracks" className="hover:text-gray-900 transition-colors">
+                  Tracks
+                </Link>
+                <Link href="/series" className="hover:text-gray-900 transition-colors">
+                  Series
+                </Link>
+                
+                {isAdmin && (
+                  <Link
+                    href="/new"
+                    className="ml-2 inline-flex items-center justify-center rounded-sm border border-gray-900 bg-gray-900 px-3 py-1.5 text-xs text-white hover:bg-gray-800 transition-colors"
+                  >
+                    + New Entry
+                  </Link>
+                )}
+              </nav>
+
+              {/* Vertical divider */}
+              <div className="h-4 w-px bg-gray-200" />
+
+              {/* Profile links */}
+              <div className="flex items-center gap-4 text-gray-400">
+                <a
+                  href={PROFILE_LINKS.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-800 transition-colors flex items-center"
+                  title="GitHub"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                  </svg>
+                </a>
+                <a
+                  href={PROFILE_LINKS.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-800 transition-colors flex items-center"
+                  title="LinkedIn"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                </a>
+                <a
+                  href={PROFILE_LINKS.leetcode}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-800 transition-colors flex items-center"
+                  title="LeetCode"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414 0-1.954l-4.995-4.986c-.54-.54-1.414-.54-1.954 0l-.396.396c-.54.54-.54 1.414 0 1.954l3.167 3.167c.54.54.54 1.414 0 1.954l-.396.396c-.54.54-1.414.54-1.954 0l-4.143-4.143c-.54-.54-.54-1.414 0-1.954l4.143-4.143c.54-.54 1.414-.54 1.954 0l.396.396c.54.54 1.414.54 1.954 0l4.143-4.143c.54-.54.54-1.414 0-1.954l-2.396-2.396C15.114.153 14.357 0 13.483 0z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
           </div>
         </header>
 
@@ -85,7 +128,7 @@ export default async function RootLayout({
         {/* Footer */}
         <footer className="border-t border-gray-200 bg-white py-6 text-center text-xs text-gray-500">
           <div className="mx-auto max-w-5xl px-6 flex items-center justify-center gap-4">
-            <span>&copy; {new Date().getFullYear()} DevLog. Built with Next.js, Prisma, and Vercel.</span>
+            <span>&copy; {new Date().getFullYear()} GrindLog. Built with Next.js, Prisma, and Vercel.</span>
             {isAdmin && (
               <form action={handleLogout} className="inline">
                 <button type="submit" className="text-xs text-red-600 hover:underline cursor-pointer">

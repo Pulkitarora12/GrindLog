@@ -15,10 +15,10 @@ export default async function DashboardPage() {
       {/* Editorial Header & Stats Grid */}
       <section className="border-b border-gray-200 pb-8">
         <h1 className="font-serif text-4xl font-bold tracking-tight text-gray-900 mb-2">
-          DevLog Dashboard
+          Welcome to Pulkit's GrindLog
         </h1>
         <p className="text-gray-500 font-serif italic text-sm mb-8">
-          A written record of progress, habits, and skill building.
+          Tracking the road to placement, one day at a time.
         </p>
 
         {/* Highlight cards */}

@@ -37,7 +37,7 @@ export default function LoginPage() {
         {/* Title */}
         <div className="text-center">
           <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900">
-            DevLog Gate
+            GrindLog Admin
           </h1>
           <p className="mt-2 text-xs text-gray-500 font-serif italic">
             Enter password to authenticate admin sessions.
