@@ -66,15 +66,6 @@ export default async function RootLayout({
                 <Link href="/series" className="hover:text-gray-900 transition-colors">
                   Series
                 </Link>
-                
-                {isAdmin && (
-                  <Link
-                    href="/new"
-                    className="ml-2 inline-flex items-center justify-center rounded-sm border border-gray-900 bg-gray-900 px-3 py-1.5 text-xs text-white hover:bg-gray-800 transition-colors"
-                  >
-                    + New Entry
-                  </Link>
-                )}
               </nav>
 
               {/* Vertical divider */}

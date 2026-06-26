@@ -9,7 +9,7 @@ interface SeriesItem {
   name: string;
   description: string | null;
   _count: {
-    entries: number;
+    daySummaries: number;
   };
 }
 
@@ -152,7 +152,7 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
                       <Link href={`/series/${item.id}`}>{item.name}</Link>
                     </h3>
                     <p className="text-xs text-gray-400 mt-1 font-medium">
-                      {item._count.entries} entry{item._count.entries !== 1 ? "ies" : ""} logged
+                      {item._count.daySummaries} day{item._count.daySummaries !== 1 ? "s" : ""} logged
                     </p>
                     {item.description && (
                       <p className="text-xs text-gray-600 mt-3 line-clamp-2 leading-relaxed italic">

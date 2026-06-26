@@ -1,7 +1,6 @@
-import { getSeriesWithEntries } from "../../actions";
+import { getSeriesWithSummaries } from "../../actions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Markdown from "@/components/Markdown";
 
 interface SeriesDetailPageProps {
   params: Promise<{
@@ -13,7 +12,7 @@ export const revalidate = 0; // Disable static cache to reflect instant database
 
 export default async function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const { id } = await params;
-  const series = await getSeriesWithEntries(id);
+  const series = await getSeriesWithSummaries(id);
 
   if (!series) {
     notFound();
@@ -43,68 +42,66 @@ export default async function SeriesDetailPage({ params }: SeriesDetailPageProps
         )}
       </div>
 
-      {/* Sequential Entries Timeline */}
-      {series.entries.length === 0 ? (
+      {/* Sequential Day Summaries Timeline */}
+      {series.daySummaries.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-gray-200 rounded-sm text-gray-400">
-          No entries have been logged in this series yet.{" "}
-          <Link href={`/new?seriesId=${series.id}`} className="text-emerald-800 underline font-semibold">
-            Log the first entry
-          </Link>
-          .
+          No days have been logged in this series yet. Close your first day from the dashboard to add to this series!
         </div>
       ) : (
-        <div className="space-y-16">
-          {series.entries.map((entry, index) => {
-            const entryDate = new Date(entry.date).toLocaleDateString("en-US", {
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {series.daySummaries.map((summary, index) => {
+            const summaryDateStr = new Date(summary.date).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
             });
+            const dateQueryStr = new Date(summary.date).toISOString().split("T")[0];
 
             return (
-              <article key={entry.id} className="group relative">
-                {/* Timeline Marker */}
-                <div className="flex items-baseline gap-3 mb-2 text-xs text-gray-400">
-                  <span className="font-serif italic font-semibold text-emerald-800 text-sm">
-                    {entry.seriesDay !== null ? `Day ${entry.seriesDay}` : `Step ${index + 1}`}
-                  </span>
-                  <span>&middot;</span>
-                  <time dateTime={new Date(entry.date).toISOString()}>{entryDate}</time>
+              <div
+                key={summary.id}
+                className="border border-gray-200 bg-white p-5 rounded-sm flex flex-col justify-between hover:border-emerald-700 transition-colors"
+              >
+                <div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <span className="font-serif italic font-bold text-emerald-800 text-sm">
+                      Day {index + 1}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      {summaryDateStr}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-gray-50 p-2.5 rounded-sm border border-gray-100">
+                      <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                        Efficiency
+                      </span>
+                      <span className="text-xl font-serif font-bold text-emerald-800 block mt-0.5">
+                        {Math.round(summary.efficiency)}%
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50 p-2.5 rounded-sm border border-gray-100">
+                      <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                        Targets Set
+                      </span>
+                      <span className="text-xl font-serif font-bold text-gray-800 block mt-0.5">
+                        {summary.targetsAchievedCount} / {summary.targetsSetCount}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Entry Title */}
-                <h2 className="font-serif text-2xl font-bold text-gray-900 mb-4 tracking-tight hover:text-emerald-800 transition-colors">
-                  <Link href={`/calendar?date=${new Date(entry.date).toISOString().split("T")[0]}`}>
-                    {entry.title || `Entry for ${entryDate}`}
+                <div className="mt-5 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
+                  <Link
+                    href={`/calendar?date=${dateQueryStr}`}
+                    className="font-semibold text-emerald-855 hover:underline flex items-center gap-1"
+                  >
+                    View Targets Details &rarr;
                   </Link>
-                </h2>
-
-                {/* Entry Markdown Content */}
-                <div className="mb-6">
-                  <Markdown content={entry.content} />
                 </div>
-
-                {/* Tags & Subtopics */}
-                <div className="flex flex-wrap gap-2 items-center border-t border-gray-100 pt-4">
-                  {entry.subtopics.map((sub) => (
-                    <span
-                      key={sub.id}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-sm border border-emerald-200 bg-emerald-50/50 text-emerald-800"
-                    >
-                      ✅ {sub.track.name}: {sub.name}
-                    </span>
-                  ))}
-
-                  {entry.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex text-[11px] text-gray-400"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </article>
+              </div>
             );
           })}
         </div>

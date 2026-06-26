@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 
 interface MonthlyCalendarProps {
   selectedDateStr: string; // "YYYY-MM-DD"
-  entryDates: string[];    // Array of "YYYY-MM-DD" strings with entries
+  summaryDates: string[];   // Array of "YYYY-MM-DD" strings with summaries
 }
 
 export default function MonthlyCalendar({
   selectedDateStr,
-  entryDates,
+  summaryDates,
 }: MonthlyCalendarProps) {
   const router = useRouter();
 
@@ -77,7 +77,7 @@ export default function MonthlyCalendar({
     month: "long",
   });
 
-  const entryDateSet = useMemo(() => new Set(entryDates), [entryDates]);
+  const summaryDateSet = useMemo(() => new Set(summaryDates), [summaryDates]);
 
   return (
     <div className="border border-gray-200 bg-white p-5 rounded-sm max-w-sm w-full mx-auto md:mx-0">
@@ -119,7 +119,7 @@ export default function MonthlyCalendar({
           }
 
           const dateStr = formatDateStr(day);
-          const hasEntry = entryDateSet.has(dateStr);
+          const hasSummary = summaryDateSet.has(dateStr);
           const isSelected = dateStr === selectedDateStr;
 
           return (
@@ -133,7 +133,7 @@ export default function MonthlyCalendar({
               }`}
             >
               <span>{day.getDate()}</span>
-              {hasEntry && !isSelected && (
+              {hasSummary && !isSelected && (
                 <span className="w-1 h-1 bg-emerald-700 rounded-full absolute bottom-1" />
               )}
             </button>

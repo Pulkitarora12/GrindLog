@@ -1,9 +1,7 @@
-import { getEntryByDate } from "../actions";
+import { getDaySummaryWithTargets } from "../actions";
 import prisma from "@/lib/prisma";
 import MonthlyCalendar from "@/components/MonthlyCalendar";
-import Markdown from "@/components/Markdown";
 import Link from "next/link";
-import DeleteEntryForm from "@/components/DeleteEntryForm";
 import { isAuthorized } from "@/lib/auth";
 
 interface CalendarPageProps {
@@ -20,27 +18,29 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     isAuthorized(),
   ]);
 
-  // Default to today's local date YYYY-MM-DD
+  // Default to today's local date YYYY-MM-DD (Asia/Kolkata timezone context)
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(today.getDate()).padStart(2, "0")}`;
+  const options = { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" } as const;
+  const formatter = new Intl.DateTimeFormat("en-CA", options);
+  const todayStr = formatter.format(today);
 
   const selectedDateStr = params.date || todayStr;
 
-  // Fetch the entry for the selected date
-  const entry = await getEntryByDate(selectedDateStr);
+  // Fetch the summary and targets for the selected date
+  const data = await getDaySummaryWithTargets(selectedDateStr);
+  const summary = data?.summary || null;
+  const targets = data?.targets || [];
 
-  // Fetch all unique entry dates in YYYY-MM-DD format for highlighting on the calendar
-  const allEntries = await prisma.entry.findMany({
+  // Fetch all unique closed summary dates in YYYY-MM-DD format for highlighting on the calendar
+  const allSummaries = await prisma.daySummary.findMany({
+    where: { isClosed: true },
     select: { date: true },
   });
 
-  const entryDates = Array.from(
+  const summaryDates = Array.from(
     new Set(
-      allEntries.map((e) => {
-        const d = new Date(e.date);
+      allSummaries.map((s) => {
+        const d = new Date(s.date);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
           2,
           "0"
@@ -59,7 +59,24 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     }
   );
 
+  // Chronological day index in Series if associated
+  let seriesDayNum: number | null = null;
+  if (summary && summary.seriesId) {
+    const priorDaysCount = await prisma.daySummary.count({
+      where: {
+        seriesId: summary.seriesId,
+        isClosed: true,
+        date: {
+          lte: summary.date,
+        },
+      },
+    });
+    seriesDayNum = priorDaysCount;
+  }
 
+  // Filter achieved and missed targets
+  const achievedTargets = targets.filter((t) => t.done);
+  const missedTargets = targets.filter((t) => !t.done);
 
   return (
     <div className="space-y-8">
@@ -69,7 +86,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           Calendar Log
         </h1>
         <p className="text-gray-500 font-serif italic text-sm">
-          Browse daily entries chronologically and review what you completed each day.
+          Browse daily efficiency, targets achieved, and track your consistency.
         </p>
       </div>
 
@@ -78,11 +95,11 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
         <div className="w-full md:w-auto shrink-0">
           <MonthlyCalendar
             selectedDateStr={selectedDateStr}
-            entryDates={entryDates}
+            summaryDates={summaryDates}
           />
         </div>
 
-        {/* Right Column: Entry Details / Write prompt */}
+        {/* Right Column: Day Summary Details */}
         <div className="flex-1 border border-gray-200 bg-white p-6 rounded-sm w-full min-h-[300px]">
           <div className="border-b border-gray-100 pb-4 mb-6 flex justify-between items-start gap-4">
             <div>
@@ -93,113 +110,128 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                 {formattedSelectedDate}
               </h2>
             </div>
-
-            {/* Quick Actions (if entry exists) */}
-            {entry && isAdmin && (
-              <div className="flex items-center gap-3">
-                <Link
-                  href={`/new?edit=${entry.id}`}
-                  className="text-xs border border-gray-300 rounded-sm px-2.5 py-1 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Edit Log
-                </Link>
-                <DeleteEntryForm
-                  entryId={entry.id}
-                  selectedDateStr={selectedDateStr}
-                />
-              </div>
+            {summary && (
+              <span className="px-2.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                ✓ Day Closed
+              </span>
             )}
           </div>
 
-          {entry ? (
+          {summary ? (
             <div className="space-y-6">
-              {/* Optional Title & Series Info */}
-              {(entry.title || entry.series) && (
+              {/* Optional Series Info */}
+              {summary.series && (
                 <div className="space-y-1">
-                  {entry.title && (
-                    <h3 className="font-serif text-2xl font-bold text-gray-900">
-                      {entry.title}
-                    </h3>
-                  )}
-                  {entry.series && (
-                    <p className="text-sm font-serif italic text-emerald-800">
-                      Series: {entry.series.name}
-                      {entry.seriesDay !== null && ` (Day ${entry.seriesDay})`}
-                    </p>
-                  )}
+                  <p className="text-sm font-serif italic text-emerald-850">
+                    Series: {summary.series.name}
+                    {seriesDayNum !== null && ` (Day ${seriesDayNum})`}
+                  </p>
                 </div>
               )}
 
-              {/* Render Content Markdown */}
-              <div className="prose">
-                <Markdown content={entry.content} />
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="border border-gray-100 bg-gray-50/50 p-4 rounded-sm">
+                  <span className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
+                    Efficiency
+                  </span>
+                  <span className="text-3xl font-serif font-bold text-emerald-800 mt-1 block">
+                    {Math.round(summary.efficiency)}%
+                  </span>
+                </div>
+                <div className="border border-gray-100 bg-gray-50/50 p-4 rounded-sm">
+                  <span className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
+                    Targets Achieved
+                  </span>
+                  <span className="text-3xl font-serif font-bold text-emerald-800 mt-1 block">
+                    {summary.targetsAchievedCount} / {summary.targetsSetCount}
+                  </span>
+                </div>
+                <div className="border border-gray-100 bg-gray-50/50 p-4 rounded-sm">
+                  <span className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
+                    Closed At
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800 mt-3.5 block">
+                    {new Date(summary.createdAt).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
               </div>
 
-              {/* Checklist completion summary */}
-              {entry.subtopics.length > 0 && (
-                <div className="border-t border-gray-100 pt-6 space-y-3">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    Completed Checklists
-                  </h4>
-                  <div className="space-y-2">
-                    {entry.subtopics.map((sub) => (
-                      <div
-                        key={sub.id}
-                        className="text-sm flex items-center gap-2 text-gray-800"
-                      >
-                        <span className="text-emerald-700 font-bold">✓</span>
-                        <span>
-                          Completed{" "}
-                          <span className="font-semibold text-black">
-                            {sub.name}
-                          </span>{" "}
-                          under track{" "}
-                          <span className="font-semibold text-black">
-                            {sub.track.name}
-                          </span>
-                          {entry.series && (
-                            <>
-                              {" "}
-                              &mdash; via{" "}
-                              <span className="italic font-serif text-emerald-800">
-                                {entry.series.name}
-                                {entry.seriesDay !== null &&
-                                  `, Day ${entry.seriesDay}`}
+              {/* Targets Breakdown */}
+              <div className="space-y-6 border-t border-gray-100 pt-6">
+                {achievedTargets.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                      Achieved ({achievedTargets.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {achievedTargets.map((t) => (
+                        <div key={t.id} className="text-sm flex items-start gap-2.5 text-gray-800">
+                          <span className="text-emerald-700 font-bold mt-0.5">✓</span>
+                          <div>
+                            <span>{t.text}</span>
+                            {t.subtopic && (
+                              <span className="inline-block ml-2 text-[9px] font-semibold px-1.5 py-0.2 rounded-sm border border-emerald-100 bg-emerald-50/50 text-emerald-850">
+                                {t.subtopic.track.name}: {t.subtopic.name}
                               </span>
-                            </>
-                          )}
-                        </span>
-                      </div>
-                    ))}
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Tags list */}
-              {entry.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-                  {entry.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs text-gray-400 font-medium"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
+                {missedTargets.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-red-700">
+                      Missed / Left ({missedTargets.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {missedTargets.map((t) => (
+                        <div key={t.id} className="text-sm flex items-start gap-2.5 text-gray-500">
+                          <span className="text-red-400 font-bold mt-0.5">✗</span>
+                          <div>
+                            <span className="line-through">{t.text}</span>
+                            {t.subtopic && (
+                              <span className="inline-block ml-2 text-[9px] font-semibold px-1.5 py-0.2 rounded-sm border border-gray-200 bg-gray-50 text-gray-400">
+                                {t.subtopic.track.name}: {t.subtopic.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : selectedDateStr === todayStr ? (
+            /* Selected date is active today but not closed */
+            <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400 space-y-4">
+              <p className="text-sm">Today's tracking is still active.</p>
+              {isAdmin ? (
+                <Link
+                  href="/"
+                  className="rounded-sm border border-gray-900 bg-gray-900 px-4 py-2 text-xs text-white hover:bg-gray-800 transition-colors font-medium"
+                >
+                  Manage Today's Targets &rarr;
+                </Link>
+              ) : (
+                <p className="text-xs italic text-gray-400">
+                  The admin has not closed today's log yet.
+                </p>
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-gray-400 space-y-4">
-              <p className="text-sm">No log entry found for this day.</p>
-              {isAdmin && (
-                <Link
-                  href={`/new?date=${selectedDateStr}`}
-                  className="rounded-sm border border-gray-900 bg-gray-900 px-4 py-2 text-xs text-white hover:bg-gray-800 transition-colors font-medium"
-                >
-                  + Write Log for {formattedSelectedDate}
-                </Link>
-              )}
+            /* Untouched day in the past */
+            <div className="flex flex-col items-center justify-center py-16 text-center text-gray-400">
+              <p className="text-sm font-medium text-gray-400 font-serif italic">
+                No tracking data logged for this date.
+              </p>
             </div>
           )}
         </div>

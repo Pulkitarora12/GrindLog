@@ -33,7 +33,7 @@ model Subtopic {
   completedAt DateTime?
   trackId     String
   track       Track          @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  entries     Entry[]        @relation("EntryToSubtopic")
+  targets     DailyTarget[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -41,24 +41,34 @@ model Subtopic {
 }
 
 model Series {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  entries     Entry[]
+  id           String       @id @default(cuid())
+  name         String       @unique
+  description  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  daySummaries DaySummary[]
 }
 
-model Entry {
-  id          String     @id @default(cuid())
-  date        DateTime   @default(now())
-  title       String?
-  content     String     // Markdown supported
-  seriesId    String?
-  series      Series?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-  seriesDay   Int?       // Explicit sequential day in series (e.g. Day 47)
-  subtopics   Subtopic[] @relation("EntryToSubtopic")
-  tags        String[]   // General text tags (e.g., #rust, #sql)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+model DailyTarget {
+  id         String    @id @default(cuid())
+  text       String
+  done       Boolean   @default(false)
+  date       DateTime
+  subtopicId String?
+  subtopic   Subtopic? @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model DaySummary {
+  id                   String   @id @default(cuid())
+  date                 DateTime @unique
+  seriesId             String?
+  series               Series?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  targetsSetCount      Int
+  targetsAchievedCount Int
+  efficiency           Float
+  isClosed             Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }

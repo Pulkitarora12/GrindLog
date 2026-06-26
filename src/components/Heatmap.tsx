@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 interface HeatmapProps {
-  data: Record<string, number>; // Format: { "YYYY-MM-DD": count }
+  data: Record<string, { count: number; efficiency: number }>;
 }
 
 export default function Heatmap({ data }: HeatmapProps) {
@@ -102,7 +102,9 @@ export default function Heatmap({ data }: HeatmapProps) {
               <div key={colIndex} className="flex flex-col gap-[3.5px]">
                 {week.map((day, rowIndex) => {
                   const dateStr = formatDateStr(day);
-                  const count = data[dateStr] || 0;
+                  const dayData = data[dateStr];
+                  const count = dayData?.count || 0;
+                  const efficiency = dayData?.efficiency || 0;
                   const isFuture = day > new Date();
 
                   return (
@@ -113,7 +115,7 @@ export default function Heatmap({ data }: HeatmapProps) {
                       className={`w-[10px] h-[10px] rounded-[1px] border-[0.5px] transition-all cursor-pointer ${
                         isFuture ? "bg-transparent border-transparent cursor-default" : getIntensityClass(count)
                       }`}
-                      title={isFuture ? "" : `${dateStr}: ${count} entry${count !== 1 ? "ies" : ""}`}
+                      title={isFuture ? "" : `${dateStr}: ${efficiency}% efficiency`}
                     />
                   );
                 })}

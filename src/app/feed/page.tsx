@@ -1,13 +1,12 @@
-import { getEntries, getTracks, getSeries } from "../actions";
+import { getClosedDaySummaries, getTracks, getSeries } from "../actions";
 import Link from "next/link";
-import Markdown from "@/components/Markdown";
 import FeedFilters from "./FeedFilters";
+import prisma from "@/lib/prisma";
 
 interface FeedPageProps {
   searchParams: Promise<{
     trackId?: string;
     seriesId?: string;
-    tag?: string;
   }>;
 }
 
@@ -17,19 +16,32 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const params = await searchParams;
   const activeTrackId = params.trackId;
   const activeSeriesId = params.seriesId;
-  const activeTag = params.tag;
 
-  const [entries, tracks, series] = await Promise.all([
-    getEntries({
-      trackId: activeTrackId,
+  const [summaries, tracks, series] = await Promise.all([
+    getClosedDaySummaries({
       seriesId: activeSeriesId,
-      tag: activeTag,
+      trackId: activeTrackId,
     }),
     getTracks(),
     getSeries(),
   ]);
 
-  const hasActiveFilters = activeTrackId || activeSeriesId || activeTag;
+  // Fetch all targets for these summaries to group them efficiently in-memory
+  const targets = summaries.length > 0
+    ? await prisma.dailyTarget.findMany({
+        where: {
+          date: { in: summaries.map((s) => s.date) },
+        },
+        include: {
+          subtopic: {
+            include: { track: true },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      })
+    : [];
+
+  const hasActiveFilters = activeTrackId || activeSeriesId;
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -39,7 +51,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           Daily Log Feed
         </h1>
         <p className="text-gray-500 font-serif italic text-sm">
-          A scrollable list of all daily entries, reflections, and completed checklists.
+          A scrollable list of completed daily summaries, consistency stats, and achievements.
         </p>
       </div>
 
@@ -49,73 +61,142 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         series={series.map((s) => ({ id: s.id, name: s.name }))}
         activeTrackId={activeTrackId}
         activeSeriesId={activeSeriesId}
-        activeTag={activeTag}
       />
 
       {/* Feed List */}
-      {entries.length === 0 ? (
+      {summaries.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-gray-200 rounded-sm text-gray-400">
-          No log entries found.
-          {hasActiveFilters ? " Try clearing some filters." : " Write your first entry to get started!"}
+          No daily summaries found.
+          {hasActiveFilters ? " Try clearing some filters." : " Close your first day from the dashboard to get started!"}
         </div>
       ) : (
         <div className="divide-y divide-gray-200">
-          {entries.map((entry) => {
-            const entryDate = new Date(entry.date).toLocaleDateString("en-US", {
+          {summaries.map((summary) => {
+            const summaryDateStr = new Date(summary.date).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
             });
+            const dateQueryStr = new Date(summary.date).toISOString().split("T")[0];
+
+            // Get targets for this specific day
+            const dayTargets = targets.filter(
+              (t) => new Date(t.date).getTime() === new Date(summary.date).getTime()
+            );
+            const achievedTargets = dayTargets.filter((t) => t.done);
+            const missedTargets = dayTargets.filter((t) => !t.done);
 
             return (
-              <article key={entry.id} className="py-10 first:pt-0">
+              <article key={summary.id} className="py-10 first:pt-0">
                 <div className="flex items-baseline gap-2 mb-2 text-xs text-gray-400">
-                  <time dateTime={new Date(entry.date).toISOString()}>{entryDate}</time>
-                  {entry.series && (
+                  <time dateTime={new Date(summary.date).toISOString()}>{summaryDateStr}</time>
+                  {summary.series && (
                     <>
                       <span>&middot;</span>
                       <Link
-                        href={`/series/${entry.series.id}`}
+                        href={`/series/${summary.series.id}`}
                         className="font-serif italic text-emerald-800 hover:underline font-medium"
                       >
-                        Series: {entry.series.name}
-                        {entry.seriesDay !== null && ` (Day ${entry.seriesDay})`}
+                        Series: {summary.series.name}
                       </Link>
                     </>
                   )}
                 </div>
 
                 <h2 className="font-serif text-2xl font-bold text-gray-900 mb-4 tracking-tight hover:underline">
-                  <Link href={`/calendar?date=${new Date(entry.date).toISOString().split("T")[0]}`}>
-                    {entry.title || `Log Entry — ${entryDate}`}
+                  <Link href={`/calendar?date=${dateQueryStr}`}>
+                    Summary for {summaryDateStr}
                   </Link>
                 </h2>
 
-                <div className="mb-6">
-                  <Markdown content={entry.content} />
+                {/* Stat Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gray-50 border border-gray-100 p-3 rounded-sm">
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                      Efficiency
+                    </span>
+                    <span className="text-xl font-serif font-bold text-emerald-800 mt-0.5 block">
+                      {Math.round(summary.efficiency)}%
+                    </span>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-100 p-3 rounded-sm">
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                      Targets Completed
+                    </span>
+                    <span className="text-xl font-serif font-bold text-gray-800 mt-0.5 block">
+                      {summary.targetsAchievedCount} / {summary.targetsSetCount}
+                    </span>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-100 p-3 rounded-sm col-span-2">
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                      Mapped Tracks
+                    </span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Array.from(
+                        new Set(
+                          dayTargets
+                            .map((t) => t.subtopic?.track.name)
+                            .filter(Boolean)
+                        )
+                      ).map((trackName) => (
+                        <span
+                          key={trackName}
+                          className="text-[9px] bg-emerald-50 text-emerald-800 px-1.5 py-0.2 rounded-sm font-semibold border border-emerald-100"
+                        >
+                          {trackName}
+                        </span>
+                      ))}
+                      {dayTargets.filter((t) => t.subtopic).length === 0 && (
+                        <span className="text-[10px] text-gray-400 italic font-medium">None</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Tags & completed subtopics */}
-                <div className="flex flex-wrap gap-2 items-center border-t border-gray-100 pt-4">
-                  {entry.subtopics.map((sub) => (
-                    <Link
-                      key={sub.id}
-                      href={`/feed?trackId=${sub.trackId}`}
-                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-sm border border-emerald-200 bg-emerald-50/50 text-emerald-800 hover:bg-emerald-100 transition-colors"
-                    >
-                      ✅ {sub.track.name}: {sub.name}
-                    </Link>
-                  ))}
+                {/* Achieved vs Missed List */}
+                <div className="space-y-4">
+                  {achievedTargets.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">
+                        Achieved
+                      </span>
+                      <ul className="space-y-1 pl-1">
+                        {achievedTargets.map((t) => (
+                          <li key={t.id} className="text-xs text-gray-700 flex items-start gap-2">
+                            <span className="text-emerald-700 font-bold">✓</span>
+                            <span>{t.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                  {entry.tags.map((tag) => (
-                    <Link
-                      key={tag}
-                      href={`/feed?tag=${tag}`}
-                      className="inline-flex text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      #{tag}
-                    </Link>
-                  ))}
+                  {missedTargets.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider block mb-1">
+                        Missed / Left
+                      </span>
+                      <ul className="space-y-1 pl-1">
+                        {missedTargets.map((t) => (
+                          <li key={t.id} className="text-xs text-gray-400 flex items-start gap-2">
+                            <span className="text-red-400 font-bold">✗</span>
+                            <span className="line-through">{t.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
+                  <Link
+                    href={`/calendar?date=${dateQueryStr}`}
+                    className="font-semibold text-emerald-805 hover:underline"
+                  >
+                    View detailed summary in calendar &rarr;
+                  </Link>
                 </div>
               </article>
             );

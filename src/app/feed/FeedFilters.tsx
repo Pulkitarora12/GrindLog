@@ -18,7 +18,6 @@ interface FeedFiltersProps {
   series: Series[];
   activeTrackId?: string;
   activeSeriesId?: string;
-  activeTag?: string;
 }
 
 export default function FeedFilters({
@@ -26,7 +25,6 @@ export default function FeedFilters({
   series,
   activeTrackId = "",
   activeSeriesId = "",
-  activeTag = "",
 }: FeedFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,13 +39,7 @@ export default function FeedFilters({
     router.push(`/feed?${params.toString()}`);
   };
 
-  const removeTag = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("tag");
-    router.push(`/feed?${params.toString()}`);
-  };
-
-  const hasActiveFilters = activeTrackId || activeSeriesId || activeTag;
+  const hasActiveFilters = activeTrackId || activeSeriesId;
 
   return (
     <div className="border border-gray-200 bg-white p-4 rounded-sm flex flex-wrap gap-4 items-center justify-between">
@@ -85,19 +77,6 @@ export default function FeedFilters({
             ))}
           </select>
         </div>
-
-        {/* Tag Filter Display */}
-        {activeTag && (
-          <div className="flex items-center gap-1.5 bg-gray-100 text-gray-800 px-2 py-0.5 rounded-sm text-xs">
-            <span>Tag: #{activeTag}</span>
-            <button
-              onClick={removeTag}
-              className="text-gray-400 hover:text-gray-600 font-bold cursor-pointer"
-            >
-              &times;
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Clear Filters */}
