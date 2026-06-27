@@ -40,11 +40,13 @@ export default async function DashboardPage() {
     const [series, tracks] = await Promise.all([getSeries(), getTracks()]);
     seriesList = series.map((s) => ({ id: s.id, name: s.name }));
     subtopicsList = tracks.flatMap((t) =>
-      t.subtopics.map((s) => ({
-        id: s.id,
-        name: s.name,
-        trackName: t.name,
-      }))
+      t.subtopics
+        .filter((s) => s.status !== "DONE")
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          trackName: t.name,
+        }))
     );
   }
 
