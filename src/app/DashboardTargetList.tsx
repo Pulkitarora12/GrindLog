@@ -40,6 +40,7 @@ interface DashboardTargetListProps {
   isAdmin: boolean;
   activeDateStr: string;
   todayStr: string;
+  yesterdayStr: string;
   isClosed: boolean;
 }
 
@@ -50,6 +51,7 @@ export default function DashboardTargetList({
   isAdmin,
   activeDateStr,
   todayStr,
+  yesterdayStr,
   isClosed,
 }: DashboardTargetListProps) {
   const router = useRouter();
@@ -356,15 +358,53 @@ export default function DashboardTargetList({
           </div>
 
           <div className="flex flex-col sm:flex-row items-end gap-4 flex-wrap">
-            {/* Static Active Date Info instead of picker */}
+            {/* Date to Close dropdown/picker */}
             <div className="w-full sm:max-w-xs">
-              <span className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1 font-sans">
+              <label
+                htmlFor="close-date-select"
+                className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1 font-sans cursor-pointer"
+              >
                 Date to Close
-              </span>
-              <div className="w-full rounded-sm border border-gray-200 px-3 py-2.5 text-sm bg-white text-gray-800 font-semibold font-sans">
-                {new Date(activeDateStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                {activeDateStr !== todayStr && " (Yesterday)"}
-              </div>
+              </label>
+              <select
+                id="close-date-select"
+                value={activeDateStr}
+                onChange={(e) => {
+                  const selectedDate = e.target.value;
+                  startTransition(() => {
+                    if (selectedDate === todayStr) {
+                      router.push("/");
+                    } else {
+                      router.push(`/?date=${selectedDate}`);
+                    }
+                  });
+                }}
+                disabled={isPending}
+                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white text-gray-800 font-semibold font-sans focus:border-emerald-800 focus:outline-none cursor-pointer"
+              >
+                <option value={todayStr}>
+                  {(() => {
+                    const [year, month, day] = todayStr.split("-").map(Number);
+                    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+                  })()}{" "}
+                  (Today)
+                </option>
+                <option value={yesterdayStr}>
+                  {(() => {
+                    const [year, month, day] = yesterdayStr.split("-").map(Number);
+                    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+                  })()}{" "}
+                  (Yesterday)
+                </option>
+              </select>
             </div>
 
             {/* Series picker */}

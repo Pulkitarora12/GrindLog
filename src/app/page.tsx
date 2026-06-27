@@ -297,6 +297,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   isAdmin={isAdmin}
                   activeDateStr={activeDateStr}
                   todayStr={todayStr}
+                  yesterdayStr={getYesterdayDateString()}
                   isClosed={isActiveDayClosed}
                 />
               </div>
