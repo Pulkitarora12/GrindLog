@@ -1,0 +1,128 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { deleteDayData, reopenDay } from "@/app/actions";
+
+interface CalendarDayActionsProps {
+  dateString: string; // YYYY-MM-DD
+  hasSummary: boolean;
+}
+
+export default function CalendarDayActions({
+  dateString,
+  hasSummary,
+}: CalendarDayActionsProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const handleReopen = () => {
+    if (
+      !confirm(
+        "Reopen this day? The summary will be deleted but your targets will remain. You can then edit them and re-close the day from the dashboard."
+      )
+    )
+      return;
+
+    setError(null);
+    startTransition(async () => {
+      try {
+        await reopenDay(dateString);
+        router.push("/"); // Go to dashboard to re-manage targets
+        router.refresh();
+      } catch (err: any) {
+        setError(err.message || "Failed to reopen day.");
+      }
+    });
+  };
+
+  const handleDeleteAll = () => {
+    if (
+      !confirm(
+        "⚠ Permanently delete the summary AND all targets for this day? This cannot be undone."
+      )
+    )
+      return;
+
+    setError(null);
+    startTransition(async () => {
+      try {
+        await deleteDayData(dateString);
+        router.refresh();
+      } catch (err: any) {
+        setError(err.message || "Failed to delete day data.");
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      {error && (
+        <p className="text-xs text-red-600 border border-red-200 bg-red-50 px-3 py-2 rounded-sm">
+          {error}
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {hasSummary && (
+          <button
+            onClick={handleReopen}
+            disabled={isPending}
+            title="Delete summary only — keeps targets so you can re-edit and re-close"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50 transition-colors cursor-pointer"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.8}
+              stroke="currentColor"
+              className="w-3.5 h-3.5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+              />
+            </svg>
+            Reopen Day
+          </button>
+        )}
+
+        <button
+          onClick={handleDeleteAll}
+          disabled={isPending}
+          title="Permanently delete the summary and all targets for this day"
+          className="inline-flex items-center gap-1.5 rounded-sm border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 transition-colors cursor-pointer"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.8}
+            stroke="currentColor"
+            className="w-3.5 h-3.5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+            />
+          </svg>
+          Delete All Data
+        </button>
+      </div>
+
+      {hasSummary && (
+        <p className="text-[10px] text-gray-400 leading-relaxed">
+          <strong className="text-amber-700">Reopen</strong> — removes the
+          summary, unlocks targets for editing, then re-close from the
+          dashboard.{"  "}
+          <strong className="text-red-600">Delete All</strong> — wipes
+          everything (summary + targets) permanently.
+        </p>
+      )}
+    </div>
+  );
+}

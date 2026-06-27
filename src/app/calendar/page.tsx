@@ -1,6 +1,7 @@
 import { getDaySummaryWithTargets } from "../actions";
 import prisma from "@/lib/prisma";
 import MonthlyCalendar from "@/components/MonthlyCalendar";
+import CalendarDayActions from "@/components/CalendarDayActions";
 import Link from "next/link";
 import { isAuthorized } from "@/lib/auth";
 
@@ -110,11 +111,20 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                 {formattedSelectedDate}
               </h2>
             </div>
-            {summary && (
-              <span className="px-2.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
-                ✓ Day Closed
-              </span>
-            )}
+            <div className="flex flex-col items-end gap-2">
+              {summary && (
+                <span className="px-2.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-800 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                  ✓ Day Closed
+                </span>
+              )}
+              {/* Admin controls — shown when there is a summary or any targets */}
+              {isAdmin && (summary || targets.length > 0) && (
+                <CalendarDayActions
+                  dateString={selectedDateStr}
+                  hasSummary={!!summary}
+                />
+              )}
+            </div>
           </div>
 
           {summary ? (

@@ -55,6 +55,7 @@ export default function DashboardTargetList({
   const [newTargetText, setNewTargetText] = useState("");
   const [selectedSubtopicId, setSelectedSubtopicId] = useState("");
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
+  const [selectedDate, setSelectedDate] = useState(todayStr); // Date to close
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -132,9 +133,14 @@ export default function DashboardTargetList({
       return;
     }
 
+    const dateLabel =
+      selectedDate === todayStr
+        ? "today"
+        : `${selectedDate} (past date)`;
+
     if (
       !confirm(
-        "Are you sure you want to end the day? This will calculate efficiency, create your Day Summary, and lock these targets from editing."
+        `Are you sure you want to end the day for ${dateLabel}? This will calculate efficiency, create your Day Summary, and lock these targets from editing.`
       )
     ) {
       return;
@@ -143,8 +149,8 @@ export default function DashboardTargetList({
     setError(null);
     startTransition(async () => {
       try {
-        await endDay(todayStr, selectedSeriesId || null);
-        router.push(`/calendar?date=${todayStr}`);
+        await endDay(selectedDate, selectedSeriesId || null);
+        router.push(`/calendar?date=${selectedDate}`);
         router.refresh();
       } catch (err: any) {
         setError(err.message || "Failed to close the day.");
@@ -336,10 +342,36 @@ export default function DashboardTargetList({
             </h4>
             <p className="text-xs text-gray-500 mt-1">
               Ending the day will calculate your target efficiency and freeze these targets from any further modifications.
+              If you finished after midnight, you can select yesterday's date below.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-end gap-4">
+          <div className="flex flex-col sm:flex-row items-end gap-4 flex-wrap">
+            {/* Date picker */}
+            <div className="w-full sm:max-w-xs">
+              <label
+                htmlFor="end-day-date"
+                className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1"
+              >
+                Date to Close
+              </label>
+              <input
+                id="end-day-date"
+                type="date"
+                value={selectedDate}
+                max={todayStr}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                disabled={isPending}
+                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white focus:border-gray-900 focus:outline-none"
+              />
+              {selectedDate !== todayStr && (
+                <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                  ⚠ Closing for a past date: {selectedDate}
+                </p>
+              )}
+            </div>
+
+            {/* Series picker */}
             <div className="w-full sm:max-w-xs">
               <label
                 htmlFor="series-select"
@@ -368,7 +400,7 @@ export default function DashboardTargetList({
               disabled={isPending}
               className="w-full sm:w-auto rounded-sm border border-emerald-900 bg-emerald-800 px-6 py-2.5 text-sm text-white hover:bg-emerald-900 disabled:opacity-50 transition-colors font-semibold tracking-wide cursor-pointer"
             >
-              End Day & Generate Summary
+              End Day &amp; Generate Summary
             </button>
           </div>
         </div>

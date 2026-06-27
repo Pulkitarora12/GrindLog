@@ -381,16 +381,22 @@ export async function endDay(dateString: string, seriesId?: string | null) {
     throw new Error("Unauthorized");
   }
 
-  const todayStr = getTodayDateString();
-  if (dateString !== todayStr) {
-    throw new Error("You can only close the current day.");
+  // Validate date format
+  if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    throw new Error("Invalid date format. Expected YYYY-MM-DD.");
   }
 
-  const todayDate = new Date(todayStr);
+  // Don't allow future dates
+  const todayStr = getTodayDateString();
+  if (dateString > todayStr) {
+    throw new Error("Cannot close a future date.");
+  }
+
+  const targetDate = new Date(dateString);
 
   // Check if already closed
   const existingSummary = await prisma.daySummary.findUnique({
-    where: { date: todayDate }
+    where: { date: targetDate }
   });
 
   if (existingSummary?.isClosed) {
@@ -398,9 +404,9 @@ export async function endDay(dateString: string, seriesId?: string | null) {
   }
 
   try {
-    // Fetch targets for today
+    // Fetch targets for the selected date
     const targets = await prisma.dailyTarget.findMany({
-      where: { date: todayDate }
+      where: { date: targetDate }
     });
 
     if (targets.length === 0) {
@@ -413,7 +419,7 @@ export async function endDay(dateString: string, seriesId?: string | null) {
 
     // Create or update DaySummary to isClosed = true
     const summary = await prisma.daySummary.upsert({
-      where: { date: todayDate },
+      where: { date: targetDate },
       update: {
         seriesId: seriesId || null,
         targetsSetCount,
@@ -422,7 +428,7 @@ export async function endDay(dateString: string, seriesId?: string | null) {
         isClosed: true,
       },
       create: {
-        date: todayDate,
+        date: targetDate,
         seriesId: seriesId || null,
         targetsSetCount,
         targetsAchievedCount,
@@ -444,6 +450,52 @@ export async function endDay(dateString: string, seriesId?: string | null) {
     console.error("Failed to end day:", error);
     throw new Error(error.message || "Failed to end day");
   }
+}
+
+// ==========================================
+// DELETE / REOPEN DAY ACTIONS
+// ==========================================
+
+/**
+ * Permanently deletes the DaySummary AND all DailyTargets for a given date.
+ * Use when you want to wipe everything for a day and start fresh.
+ */
+export async function deleteDayData(dateString: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  const date = new Date(dateString);
+
+  // Delete targets first (no FK cascade from DaySummary → DailyTarget)
+  await prisma.dailyTarget.deleteMany({ where: { date } });
+
+  // Delete the summary
+  await prisma.daySummary.deleteMany({ where: { date } });
+
+  revalidatePath("/");
+  revalidatePath("/calendar");
+  revalidatePath("/feed");
+  revalidatePath("/series");
+}
+
+/**
+ * Unlocks a closed day by deleting only the DaySummary (keeps the targets).
+ * This lets the admin re-edit targets and re-close the day.
+ */
+export async function reopenDay(dateString: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  const date = new Date(dateString);
+
+  await prisma.daySummary.deleteMany({ where: { date } });
+
+  revalidatePath("/");
+  revalidatePath("/calendar");
+  revalidatePath("/feed");
+  revalidatePath("/series");
 }
 
 export async function getDaySummaryWithTargets(dateString: string) {
