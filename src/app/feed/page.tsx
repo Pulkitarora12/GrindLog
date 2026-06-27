@@ -2,6 +2,8 @@ import { getClosedDaySummaries, getTracks, getSeries } from "../actions";
 import Link from "next/link";
 import FeedFilters from "./FeedFilters";
 import prisma from "@/lib/prisma";
+import { isAuthorized } from "@/lib/auth";
+import DeleteSummaryButton from "./DeleteSummaryButton";
 
 interface FeedPageProps {
   searchParams: Promise<{
@@ -16,6 +18,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const params = await searchParams;
   const activeTrackId = params.trackId;
   const activeSeriesId = params.seriesId;
+  const isAdmin = await isAuthorized();
 
   const [summaries, tracks, series] = await Promise.all([
     getClosedDaySummaries({
@@ -197,6 +200,9 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                   >
                     View detailed summary in calendar &rarr;
                   </Link>
+                  {isAdmin && (
+                    <DeleteSummaryButton dateString={dateQueryStr} />
+                  )}
                 </div>
               </article>
             );

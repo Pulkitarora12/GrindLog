@@ -475,15 +475,6 @@ export async function deleteDayData(dateString: string) {
 
   const date = new Date(dateString);
 
-  // Prevent deleting if the day is closed
-  const summary = await prisma.daySummary.findUnique({
-    where: { date }
-  });
-
-  if (summary?.isClosed) {
-    throw new Error("Once ended, a day summary cannot be deleted or undone.");
-  }
-
   // Delete targets first (no FK cascade from DaySummary → DailyTarget)
   await prisma.dailyTarget.deleteMany({ where: { date } });
 
@@ -501,7 +492,25 @@ export async function deleteDayData(dateString: string) {
  * This lets the admin re-edit targets and re-close the day.
  */
 export async function reopenDay(dateString: string) {
-  throw new Error("Once ended, a day summary cannot be reopened or undone.");
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  const date = new Date(dateString);
+
+  try {
+    await prisma.daySummary.delete({
+      where: { date }
+    });
+
+    revalidatePath("/");
+    revalidatePath("/calendar");
+    revalidatePath("/feed");
+    revalidatePath("/series");
+  } catch (error) {
+    console.error("Failed to reopen day:", error);
+    throw new Error("Failed to reopen day");
+  }
 }
 
 export async function getDaySummaryWithTargets(dateString: string) {
