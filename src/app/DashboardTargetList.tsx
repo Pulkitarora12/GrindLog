@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   createDailyTarget,
@@ -38,6 +38,7 @@ interface DashboardTargetListProps {
   subtopicsList: SubtopicOption[];
   seriesList: SeriesOption[];
   isAdmin: boolean;
+  activeDateStr: string;
   todayStr: string;
   isClosed: boolean;
 }
@@ -47,6 +48,7 @@ export default function DashboardTargetList({
   subtopicsList,
   seriesList,
   isAdmin,
+  activeDateStr,
   todayStr,
   isClosed,
 }: DashboardTargetListProps) {
@@ -55,9 +57,16 @@ export default function DashboardTargetList({
   const [newTargetText, setNewTargetText] = useState("");
   const [selectedSubtopicId, setSelectedSubtopicId] = useState("");
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
-  const [selectedDate, setSelectedDate] = useState(todayStr); // Date to close
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Sync targets and clear errors when the active date changes
+  useEffect(() => {
+    setTargets(initialTargets);
+    setError(null);
+    setNewTargetText("");
+    setSelectedSubtopicId("");
+  }, [initialTargets, activeDateStr]);
 
   // Sort subtopics list by track name, then subtopic name
   const sortedSubtopics = [...subtopicsList].sort((a, b) => {
@@ -75,7 +84,8 @@ export default function DashboardTargetList({
       try {
         const addedTarget = await createDailyTarget(
           newTargetText,
-          selectedSubtopicId || null
+          selectedSubtopicId || null,
+          activeDateStr
         );
 
         setTargets((prev) => [...prev, addedTarget]);
@@ -134,9 +144,9 @@ export default function DashboardTargetList({
     }
 
     const dateLabel =
-      selectedDate === todayStr
+      activeDateStr === todayStr
         ? "today"
-        : `${selectedDate} (past date)`;
+        : `${activeDateStr} (yesterday)`;
 
     if (
       !confirm(
@@ -149,8 +159,8 @@ export default function DashboardTargetList({
     setError(null);
     startTransition(async () => {
       try {
-        await endDay(selectedDate, selectedSeriesId || null);
-        router.push(`/calendar?date=${selectedDate}`);
+        await endDay(activeDateStr, selectedSeriesId || null);
+        router.push(`/calendar?date=${activeDateStr}`);
         router.refresh();
       } catch (err: any) {
         setError(err.message || "Failed to close the day.");
@@ -176,7 +186,7 @@ export default function DashboardTargetList({
         <div className="border border-gray-200 bg-white p-5 rounded-sm space-y-3">
           <div className="flex justify-between items-baseline">
             <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Today's Targets Progress
+              {activeDateStr === todayStr ? "Today's" : "Yesterday's"} Targets Progress
             </span>
             <span className="text-sm font-bold text-gray-900">
               {completedCount} / {totalCount} Completed ({progressPercentage}%)
@@ -195,7 +205,7 @@ export default function DashboardTargetList({
       <div className="border border-gray-200 bg-white rounded-sm divide-y divide-gray-100">
         <div className="p-4 bg-gray-50 flex items-center justify-between">
           <h3 className="font-serif font-bold text-gray-900 text-sm">
-            Checklist for {new Date(todayStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            Checklist for {new Date(activeDateStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </h3>
           {isClosed && (
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-gray-200 text-gray-700 text-[10px] font-bold uppercase tracking-wide">
@@ -206,7 +216,7 @@ export default function DashboardTargetList({
 
         {targets.length === 0 ? (
           <div className="p-8 text-center text-sm text-gray-400">
-            No targets set for today yet. Use the form below to plan your day.
+            No targets set for this date yet. Use the form below to plan your day.
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -276,7 +286,7 @@ export default function DashboardTargetList({
           className="border border-gray-200 bg-white p-5 rounded-sm space-y-4"
         >
           <h4 className="font-serif font-bold text-gray-900 text-sm border-b border-gray-100 pb-2">
-            Add New Target
+            Add Target for {activeDateStr === todayStr ? "Today" : "Yesterday"}
           </h4>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -338,37 +348,23 @@ export default function DashboardTargetList({
         <div className="border border-emerald-800/10 bg-emerald-50/10 p-5 rounded-sm space-y-4">
           <div>
             <h4 className="font-serif font-bold text-emerald-950 text-sm">
-              Ready to Close Today?
+              Ready to Close {activeDateStr === todayStr ? "Today" : "Yesterday"}?
             </h4>
             <p className="text-xs text-gray-500 mt-1">
               Ending the day will calculate your target efficiency and freeze these targets from any further modifications.
-              If you finished after midnight, you can select yesterday's date below.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-end gap-4 flex-wrap">
-            {/* Date picker */}
+            {/* Static Active Date Info instead of picker */}
             <div className="w-full sm:max-w-xs">
-              <label
-                htmlFor="end-day-date"
-                className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1"
-              >
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1 font-sans">
                 Date to Close
-              </label>
-              <input
-                id="end-day-date"
-                type="date"
-                value={selectedDate}
-                max={todayStr}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                disabled={isPending}
-                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white focus:border-gray-900 focus:outline-none"
-              />
-              {selectedDate !== todayStr && (
-                <p className="text-[10px] text-amber-600 mt-1 font-medium">
-                  ⚠ Closing for a past date: {selectedDate}
-                </p>
-              )}
+              </span>
+              <div className="w-full rounded-sm border border-gray-200 px-3 py-2.5 text-sm bg-white text-gray-800 font-semibold font-sans">
+                {new Date(activeDateStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                {activeDateStr !== todayStr && " (Yesterday)"}
+              </div>
             </div>
 
             {/* Series picker */}
@@ -408,3 +404,4 @@ export default function DashboardTargetList({
     </div>
   );
 }
+

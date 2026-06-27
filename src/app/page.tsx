@@ -5,6 +5,11 @@ import {
   getSeries,
   getTracks,
 } from "./actions";
+import {
+  isDateAllowedForLogging,
+  getTodayDateString,
+  getYesterdayDateString,
+} from "@/lib/dateUtils";
 import Heatmap from "@/components/Heatmap";
 import Link from "next/link";
 import { isAuthorized } from "@/lib/auth";
@@ -12,31 +17,38 @@ import DashboardTargetList from "./DashboardTargetList";
 
 export const revalidate = 0; // Disable static caching so data updates instantly
 
-function getTodayDateString(): string {
-  const options = { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" } as const;
-  const formatter = new Intl.DateTimeFormat("en-CA", options);
-  return formatter.format(new Date());
+interface DashboardPageProps {
+  searchParams: Promise<{
+    date?: string;
+  }>;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const resolvedParams = await searchParams;
   const todayStr = getTodayDateString();
   const isAdmin = await isAuthorized();
 
-  const [stats, heatmapData, todayData] = await Promise.all([
+  // Validate the requested date, default to today if not within allowed logging range
+  let activeDateStr = todayStr;
+  if (resolvedParams.date && isDateAllowedForLogging(resolvedParams.date)) {
+    activeDateStr = resolvedParams.date;
+  }
+
+  const [stats, heatmapData, activeDayData] = await Promise.all([
     getDashboardStats(),
     getHeatmapData(),
-    getDaySummaryWithTargets(todayStr),
+    getDaySummaryWithTargets(activeDateStr),
   ]);
 
-  const todaySummary = todayData?.summary || null;
-  const todayTargets = todayData?.targets || [];
-  const isTodayClosed = todaySummary?.isClosed || false;
+  const activeDaySummary = activeDayData?.summary || null;
+  const activeDayTargets = activeDayData?.targets || [];
+  const isActiveDayClosed = activeDaySummary?.isClosed || false;
 
   // Fetch options for the checklist form only if needed
   let seriesList: { id: string; name: string }[] = [];
   let subtopicsList: { id: string; name: string; trackName: string }[] = [];
 
-  if (isAdmin && !isTodayClosed) {
+  if (isAdmin && !isActiveDayClosed) {
     const [series, tracks] = await Promise.all([getSeries(), getTracks()]);
     seriesList = series.map((s) => ({ id: s.id, name: s.name }));
     subtopicsList = tracks.flatMap((t) =>
@@ -50,12 +62,18 @@ export default async function DashboardPage() {
     );
   }
 
-  const formattedToday = new Date(todayStr).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  // Safe formatting to avoid Server Components RangeError: Invalid time value
+  let formattedActiveDay = "";
+  try {
+    formattedActiveDay = new Date(activeDateStr).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch (err) {
+    formattedActiveDay = activeDateStr;
+  }
 
   return (
     <div className="space-y-12">
@@ -163,29 +181,46 @@ export default async function DashboardPage() {
 
         {/* Right column: Target Management & Activity Feed */}
         <section className="md:col-span-2 space-y-8">
-          {/* Today's Target Panel */}
+          {/* Target Panel */}
           <div className="space-y-4">
             <div className="border-b border-gray-200 pb-2">
-              <h2 className="font-serif text-xl font-bold text-gray-900">
-                Today's Grind Targets
+              <h2 className="font-serif text-xl font-bold text-gray-900 flex justify-between items-center">
+                <span>{activeDateStr === todayStr ? "Today's" : "Yesterday's"} Grind Targets</span>
+                <div className="flex gap-2 text-xs font-sans">
+                  {activeDateStr === todayStr ? (
+                    <Link
+                      href={`/?date=${getYesterdayDateString()}`}
+                      className="text-emerald-800 hover:underline"
+                    >
+                      &larr; Switch to Yesterday
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/"
+                      className="text-emerald-800 hover:underline"
+                    >
+                      Switch to Today &rarr;
+                    </Link>
+                  )}
+                </div>
               </h2>
             </div>
 
-            {isTodayClosed ? (
-              /* Today is closed: Render summary view directly */
+            {isActiveDayClosed ? (
+              /* Active day is closed: Render summary view directly */
               <div className="border border-emerald-800/10 bg-emerald-50/20 p-6 rounded-sm space-y-6">
                 <div>
                   <div className="flex items-center justify-between">
                     <h3 className="font-serif text-2xl font-bold text-emerald-950">
-                      Summary for {formattedToday}
+                      Summary for {formattedActiveDay}
                     </h3>
                     <span className="px-2 py-0.5 rounded-sm bg-emerald-800 text-white text-[10px] font-bold uppercase tracking-wider">
                       Day Completed
                     </span>
                   </div>
-                  {todaySummary!.series && (
+                  {activeDaySummary!.series && (
                     <p className="text-xs text-emerald-850 italic font-serif mt-1">
-                      Series: {todaySummary!.series.name}
+                      Series: {activeDaySummary!.series.name}
                     </p>
                   )}
                 </div>
@@ -196,7 +231,7 @@ export default async function DashboardPage() {
                       Efficiency
                     </span>
                     <span className="text-3xl font-serif font-bold text-emerald-800 mt-1 block">
-                      {Math.round(todaySummary!.efficiency)}%
+                      {Math.round(activeDaySummary!.efficiency)}%
                     </span>
                   </div>
                   <div className="border border-emerald-800/10 bg-white p-4 rounded-sm">
@@ -204,7 +239,7 @@ export default async function DashboardPage() {
                       Achieved
                     </span>
                     <span className="text-3xl font-serif font-bold text-emerald-800 mt-1 block">
-                      {todaySummary!.targetsAchievedCount} / {todaySummary!.targetsSetCount}
+                      {activeDaySummary!.targetsAchievedCount} / {activeDaySummary!.targetsSetCount}
                     </span>
                   </div>
                   <div className="border border-emerald-800/10 bg-white p-4 rounded-sm">
@@ -212,7 +247,7 @@ export default async function DashboardPage() {
                       Date Closed
                     </span>
                     <span className="text-sm font-semibold text-gray-800 mt-2 block">
-                      {new Date(todaySummary!.createdAt).toLocaleTimeString("en-US", {
+                      {new Date(activeDaySummary!.createdAt).toLocaleTimeString("en-US", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
@@ -222,10 +257,10 @@ export default async function DashboardPage() {
 
                 <div className="space-y-3">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 block">
-                    Today's Target List (Locked)
+                    Target List (Locked)
                   </span>
                   <div className="bg-white border border-gray-200 rounded-sm divide-y divide-gray-100">
-                    {todayTargets.map((t) => (
+                    {activeDayTargets.map((t) => (
                       <div key={t.id} className="p-3 flex items-center gap-3">
                         <span className={t.done ? "text-emerald-700 font-bold" : "text-gray-300 font-bold"}>
                           {t.done ? "✓" : "✗"}
@@ -240,7 +275,7 @@ export default async function DashboardPage() {
 
                 <div className="text-center pt-2">
                   <Link
-                    href={`/calendar?date=${todayStr}`}
+                    href={`/calendar?date=${activeDateStr}`}
                     className="text-xs font-semibold text-emerald-800 hover:underline inline-flex items-center gap-1.5"
                   >
                     View detailed calendar summary &rarr;
@@ -248,10 +283,10 @@ export default async function DashboardPage() {
                 </div>
               </div>
             ) : (
-              /* Today is active: Render checklist control */
+              /* Active day is active: Render checklist control */
               <div className="space-y-4">
                 <DashboardTargetList
-                  initialTargets={todayTargets.map((t) => ({
+                  initialTargets={activeDayTargets.map((t) => ({
                     id: t.id,
                     text: t.text,
                     done: t.done,
@@ -260,8 +295,9 @@ export default async function DashboardPage() {
                   subtopicsList={subtopicsList}
                   seriesList={seriesList}
                   isAdmin={isAdmin}
+                  activeDateStr={activeDateStr}
                   todayStr={todayStr}
-                  isClosed={isTodayClosed}
+                  isClosed={isActiveDayClosed}
                 />
               </div>
             )}

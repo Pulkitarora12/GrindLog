@@ -4,6 +4,11 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { SubtopicStatus } from "@prisma/client";
 import { isAuthorized } from "@/lib/auth";
+import {
+  getTodayDateString,
+  getYesterdayDateString,
+  isDateAllowedForLogging,
+} from "@/lib/dateUtils";
 
 // ==========================================
 // TRACKS & SUBTOPICS ACTIONS
@@ -228,15 +233,9 @@ export async function deleteSeries(id: string) {
 }
 
 // ==========================================
-// HELPER FOR TIMEZONE-SPECIFIC TODAY
+// DATE HELPERS IMPORTED FROM UTILS
 // ==========================================
 
-function getTodayDateString(): string {
-  // Format current date to YYYY-MM-DD in Asia/Kolkata timezone
-  const options = { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" } as const;
-  const formatter = new Intl.DateTimeFormat("en-CA", options); // en-CA gives YYYY-MM-DD
-  return formatter.format(new Date());
-}
 
 // ==========================================
 // DAILY TARGETS ACTIONS
@@ -260,17 +259,27 @@ export async function getDailyTargets(dateString: string) {
   }
 }
 
-export async function createDailyTarget(text: string, subtopicId?: string | null) {
+export async function createDailyTarget(
+  text: string,
+  subtopicId?: string | null,
+  dateString?: string
+) {
   if (!await isAuthorized()) {
     throw new Error("Unauthorized");
   }
 
   const todayStr = getTodayDateString();
-  const todayDate = new Date(todayStr);
+  const targetDateStr = dateString || todayStr;
+
+  if (!isDateAllowedForLogging(targetDateStr)) {
+    throw new Error("Cannot log targets for dates other than today or yesterday.");
+  }
+
+  const targetDate = new Date(targetDateStr);
 
   // Check if today is closed
   const summary = await prisma.daySummary.findUnique({
-    where: { date: todayDate }
+    where: { date: targetDate }
   });
 
   if (summary?.isClosed) {
@@ -281,7 +290,7 @@ export async function createDailyTarget(text: string, subtopicId?: string | null
     const target = await prisma.dailyTarget.create({
       data: {
         text: text.trim(),
-        date: todayDate,
+        date: targetDate,
         subtopicId: subtopicId || null,
       },
       include: {
@@ -386,10 +395,9 @@ export async function endDay(dateString: string, seriesId?: string | null) {
     throw new Error("Invalid date format. Expected YYYY-MM-DD.");
   }
 
-  // Don't allow future dates
-  const todayStr = getTodayDateString();
-  if (dateString > todayStr) {
-    throw new Error("Cannot close a future date.");
+  // Only allow today or yesterday
+  if (!isDateAllowedForLogging(dateString)) {
+    throw new Error("You can only close a day for today or yesterday.");
   }
 
   const targetDate = new Date(dateString);
@@ -467,6 +475,15 @@ export async function deleteDayData(dateString: string) {
 
   const date = new Date(dateString);
 
+  // Prevent deleting if the day is closed
+  const summary = await prisma.daySummary.findUnique({
+    where: { date }
+  });
+
+  if (summary?.isClosed) {
+    throw new Error("Once ended, a day summary cannot be deleted or undone.");
+  }
+
   // Delete targets first (no FK cascade from DaySummary → DailyTarget)
   await prisma.dailyTarget.deleteMany({ where: { date } });
 
@@ -484,18 +501,7 @@ export async function deleteDayData(dateString: string) {
  * This lets the admin re-edit targets and re-close the day.
  */
 export async function reopenDay(dateString: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  const date = new Date(dateString);
-
-  await prisma.daySummary.deleteMany({ where: { date } });
-
-  revalidatePath("/");
-  revalidatePath("/calendar");
-  revalidatePath("/feed");
-  revalidatePath("/series");
+  throw new Error("Once ended, a day summary cannot be reopened or undone.");
 }
 
 export async function getDaySummaryWithTargets(dateString: string) {
