@@ -33,13 +33,13 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 border border-gray-200 bg-white p-8 rounded-sm">
+      <div className="w-full max-w-md space-y-8 border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-8 rounded-sm transition-colors duration-300">
         {/* Title */}
         <div className="text-center">
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
             GrindLog Admin
           </h1>
-          <p className="mt-2 text-xs text-gray-500 font-serif italic">
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 font-serif italic">
             Enter password to authenticate admin sessions.
           </p>
         </div>
@@ -47,7 +47,7 @@ export default function LoginPage() {
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="border border-red-200 bg-red-50 text-red-800 p-3 rounded-sm text-xs text-center">
+            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-400 p-3 rounded-sm text-xs text-center">
               {error}
             </div>
           )}
@@ -67,7 +67,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isPending}
                 placeholder="Password"
-                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white focus:border-gray-900 focus:outline-none text-center"
+                className="w-full rounded-sm border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none text-center"
               />
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="group relative flex w-full justify-center rounded-sm border border-gray-900 bg-gray-900 py-2 px-4 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
+              className="group relative flex w-full justify-center rounded-sm border border-gray-900 dark:border-slate-700 bg-gray-900 dark:bg-slate-800 py-2 px-4 text-sm font-medium text-white hover:bg-gray-800 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
             >
               {isPending ? "Validating..." : "Authenticate"}
             </button>

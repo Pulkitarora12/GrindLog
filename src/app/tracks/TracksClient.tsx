@@ -111,31 +111,31 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div className="border-b border-gray-200 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="border-b border-gray-200 dark:border-gray-800 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 mb-1">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-1">
             Topic Checklists
           </h1>
-          <p className="text-gray-500 font-serif italic text-sm">
+          <p className="text-gray-500 dark:text-gray-400 font-serif italic text-sm">
             Manage your study guides, roadmaps, and checklist items.
           </p>
         </div>
 
         {/* Add Track Form */}
         {isAdmin && (
-          <form onSubmit={handleCreateTrack} className="flex gap-2 max-w-sm">
+          <form onSubmit={handleCreateTrack} className="flex gap-2 max-w-sm w-full">
             <input
               type="text"
               placeholder="Track Name (e.g. DSA)"
               value={newTrackName}
               onChange={(e) => setNewTrackName(e.target.value)}
               disabled={isPending}
-              className="flex-1 rounded-sm border border-gray-300 px-3 py-1.5 text-sm bg-white focus:border-gray-900 focus:outline-none"
+              className="flex-1 rounded-sm border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
             />
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-sm border border-gray-900 bg-gray-900 px-4 py-1.5 text-sm text-white hover:bg-gray-800 disabled:opacity-50 transition-colors font-medium cursor-pointer"
+              className="rounded-sm border border-gray-900 dark:border-slate-700 bg-gray-900 dark:bg-slate-800 px-4 py-1.5 text-sm text-white hover:bg-gray-800 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors font-medium cursor-pointer"
             >
               Add Track
             </button>
@@ -144,14 +144,14 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
       </div>
 
       {error && (
-        <div className="border border-red-200 bg-red-50 text-red-800 px-4 py-3 rounded-sm text-sm">
+        <div className="border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-400 px-4 py-3 rounded-sm text-sm">
           {error}
         </div>
       )}
 
       {/* Tracks Grid */}
       {tracks.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-gray-200 rounded-sm text-gray-400">
+        <div className="text-center py-16 border border-dashed border-gray-200 dark:border-gray-800 rounded-sm text-gray-400 dark:text-gray-500">
           No tracks created yet. Use the form above to add a track like "DSA", "Dev", or "DevOps".
         </div>
       ) : (
@@ -162,13 +162,13 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
             const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
             return (
-              <div key={track.id} className="border border-gray-200 bg-white p-6 rounded-sm flex flex-col justify-between">
+              <div key={track.id} className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-6 rounded-sm flex flex-col justify-between transition-colors duration-300">
                 <div>
                   {/* Track Header */}
                   <div className="flex justify-between items-baseline mb-4">
                     <div>
-                      <h2 className="text-xl font-serif font-bold text-gray-900">{track.name}</h2>
-                      <span className="text-xs text-gray-400 font-medium">
+                      <h2 className="text-xl font-serif font-bold text-gray-900 dark:text-gray-100">{track.name}</h2>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
                         {completedCount}/{totalCount} Completed ({percentage}%)
                       </span>
                     </div>
@@ -176,7 +176,7 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
                       <button
                         onClick={() => handleDeleteTrack(track.id)}
                         disabled={isPending}
-                        className="text-xs text-gray-400 hover:text-red-700 transition-colors cursor-pointer"
+                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 transition-colors cursor-pointer"
                       >
                         Delete Track
                       </button>
@@ -186,22 +186,22 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
                   {/* Subtopics Checklist */}
                   <div className="space-y-2 mb-6">
                     {track.subtopics.length === 0 ? (
-                      <div className="text-xs text-gray-400 italic py-3">
+                      <div className="text-xs text-gray-400 dark:text-gray-500 italic py-3">
                         No subtopics yet. Add one below.
                       </div>
                     ) : (
                       track.subtopics.map((subtopic) => (
                         <div
                           key={subtopic.id}
-                          className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 border-b border-gray-100 last:border-0 rounded-sm"
+                          className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 dark:hover:bg-slate-800/40 border-b border-gray-100 dark:border-gray-800 last:border-0 rounded-sm"
                         >
                           <span
                             className={`text-sm ${
                               subtopic.status === SubtopicStatus.DONE
-                                ? "line-through text-gray-400"
+                                ? "line-through text-gray-400 dark:text-gray-500"
                                 : subtopic.status === SubtopicStatus.IN_PROGRESS
-                                ? "text-gray-900 font-medium"
-                                : "text-gray-700"
+                                ? "text-gray-900 dark:text-gray-100 font-medium"
+                                : "text-gray-700 dark:text-gray-300"
                             }`}
                           >
                             {subtopic.name}
@@ -218,12 +218,12 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
                                 )
                               }
                               disabled={!isAdmin || isPending}
-                              className={`text-xs border rounded-sm px-1.5 py-0.5 bg-white cursor-pointer ${
+                              className={`text-xs border rounded-sm px-1.5 py-0.5 bg-white dark:bg-slate-900 cursor-pointer ${
                                 subtopic.status === SubtopicStatus.DONE
-                                  ? "border-emerald-200 text-emerald-800"
+                                  ? "border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-450"
                                   : subtopic.status === SubtopicStatus.IN_PROGRESS
-                                  ? "border-amber-200 text-amber-800"
-                                  : "border-gray-200 text-gray-500"
+                                  ? "border-amber-200 dark:border-amber-900/30 text-amber-800 dark:text-amber-450"
+                                  : "border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-450"
                               }`}
                             >
                               <option value={SubtopicStatus.NOT_STARTED}>Not Started</option>
@@ -236,7 +236,7 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
                               <button
                                 onClick={() => handleDeleteSubtopic(subtopic.id)}
                                 disabled={isPending}
-                                className="text-gray-400 hover:text-red-700 text-xs px-1 cursor-pointer"
+                                className="text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 text-xs px-1 cursor-pointer"
                                 title="Delete subtopic"
                               >
                                 &times;
@@ -253,7 +253,7 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
                 {isAdmin && (
                   <form
                     onSubmit={(e) => handleCreateSubtopic(e, track.id)}
-                    className="flex gap-2 border-t border-gray-100 pt-4"
+                    className="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4"
                   >
                     <input
                       type="text"
@@ -266,12 +266,12 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
                         }))
                       }
                       disabled={isPending}
-                      className="flex-1 rounded-sm border border-gray-200 px-2.5 py-1 text-xs bg-white focus:border-gray-900 focus:outline-none"
+                      className="flex-1 rounded-sm border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
                     />
                     <button
                       type="submit"
                       disabled={isPending}
-                      className="rounded-sm border border-gray-200 px-3 py-1 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition-colors cursor-pointer"
+                      className="rounded-sm border border-gray-200 dark:border-gray-750 px-3 py-1 text-xs bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
                     >
                       Add
                     </button>

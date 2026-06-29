@@ -47,11 +47,11 @@ export default function Heatmap({ data }: HeatmapProps) {
   };
 
   const getIntensityClass = (count: number) => {
-    if (!count || count === 0) return "bg-gray-100 hover:bg-gray-200 border-gray-200/50";
-    if (count === 1) return "bg-emerald-100 hover:bg-emerald-200 border-emerald-200";
-    if (count === 2) return "bg-emerald-300 hover:bg-emerald-400 border-emerald-300";
-    if (count === 3) return "bg-emerald-500 hover:bg-emerald-600 border-emerald-400";
-    return "bg-emerald-700 hover:bg-emerald-800 border-emerald-600";
+    if (!count || count === 0) return "bg-gray-100 dark:bg-slate-800/80 hover:bg-gray-200 dark:hover:bg-slate-700 border-gray-200/50 dark:border-slate-800/40";
+    if (count === 1) return "bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-200 dark:hover:bg-emerald-900/30 border-emerald-200 dark:border-emerald-900/50";
+    if (count === 2) return "bg-emerald-300 dark:bg-emerald-800/60 hover:bg-emerald-400 dark:hover:bg-emerald-800/80 border-emerald-300 dark:border-emerald-700/85";
+    if (count === 3) return "bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-500 border-emerald-400 dark:border-emerald-500/85";
+    return "bg-emerald-700 dark:bg-emerald-400 hover:bg-emerald-800 dark:hover:bg-emerald-300 border-emerald-600 dark:border-emerald-300/80";
   };
 
   const monthLabels = useMemo(() => {
@@ -72,10 +72,10 @@ export default function Heatmap({ data }: HeatmapProps) {
   }, [gridWeeks]);
 
   return (
-    <div className="w-full overflow-x-auto border border-gray-200 bg-white p-6 rounded-sm">
+    <div className="w-full overflow-x-auto border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-6 rounded-sm transition-colors duration-300">
       <div className="min-w-[760px] flex flex-col">
         {/* Month labels header */}
-        <div className="flex text-[10px] text-gray-400 h-5 relative ml-6">
+        <div className="flex text-[10px] text-gray-400 dark:text-gray-500 h-5 relative ml-6">
           {monthLabels.map((label, i) => (
             <div
               key={i}
@@ -89,7 +89,7 @@ export default function Heatmap({ data }: HeatmapProps) {
 
         <div className="flex">
           {/* Day of week labels */}
-          <div className="flex flex-col justify-between text-[9px] text-gray-400 w-6 h-[86px] pr-2">
+          <div className="flex flex-col justify-between text-[9px] text-gray-400 dark:text-gray-500 w-6 h-[86px] pr-2">
             <span>Su</span>
             <span>Tu</span>
             <span>Th</span>
@@ -125,13 +125,13 @@ export default function Heatmap({ data }: HeatmapProps) {
         </div>
 
         {/* Legend */}
-        <div className="flex justify-end items-center gap-1.5 mt-4 text-[10px] text-gray-500 mr-2">
+        <div className="flex justify-end items-center gap-1.5 mt-4 text-[10px] text-gray-500 dark:text-gray-400 mr-2">
           <span>Less</span>
-          <div className="w-[10px] h-[10px] bg-gray-100 border-[0.5px] border-gray-200/50 rounded-[1px]" />
-          <div className="w-[10px] h-[10px] bg-emerald-100 border-[0.5px] border-emerald-200 rounded-[1px]" />
-          <div className="w-[10px] h-[10px] bg-emerald-300 border-[0.5px] border-emerald-300 rounded-[1px]" />
-          <div className="w-[10px] h-[10px] bg-emerald-500 border-[0.5px] border-emerald-400 rounded-[1px]" />
-          <div className="w-[10px] h-[10px] bg-emerald-700 border-[0.5px] border-emerald-600 rounded-[1px]" />
+          <div className="w-[10px] h-[10px] bg-gray-100 dark:bg-slate-800/80 border-[0.5px] border-gray-200/50 dark:border-slate-800/40 rounded-[1px]" />
+          <div className="w-[10px] h-[10px] bg-emerald-100 dark:bg-emerald-950/40 border-[0.5px] border-emerald-200 dark:border-emerald-900/50 rounded-[1px]" />
+          <div className="w-[10px] h-[10px] bg-emerald-300 dark:bg-emerald-800/60 border-[0.5px] border-emerald-300 dark:border-emerald-700/85 rounded-[1px]" />
+          <div className="w-[10px] h-[10px] bg-emerald-500 dark:bg-emerald-600 border-[0.5px] border-emerald-400 dark:border-emerald-500/85 rounded-[1px]" />
+          <div className="w-[10px] h-[10px] bg-emerald-700 dark:bg-emerald-400 border-[0.5px] border-emerald-600 dark:border-emerald-300/80 rounded-[1px]" />
           <span>More</span>
         </div>
       </div>

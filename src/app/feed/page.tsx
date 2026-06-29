@@ -49,11 +49,11 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="border-b border-gray-200 pb-6">
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 mb-1">
+      <div className="border-b border-gray-200 dark:border-gray-800 pb-6">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-1">
           Daily Log Feed
         </h1>
-        <p className="text-gray-500 font-serif italic text-sm">
+        <p className="text-gray-500 dark:text-gray-400 font-serif italic text-sm">
           A scrollable list of completed daily summaries, consistency stats, and achievements.
         </p>
       </div>
@@ -68,12 +68,12 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
       {/* Feed List */}
       {summaries.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-gray-200 rounded-sm text-gray-400">
+        <div className="text-center py-20 border border-dashed border-gray-200 dark:border-gray-800 rounded-sm text-gray-400 dark:text-gray-500">
           No daily summaries found.
           {hasActiveFilters ? " Try clearing some filters." : " Close your first day from the dashboard to get started!"}
         </div>
       ) : (
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-800">
           {summaries.map((summary) => {
             const summaryDateStr = new Date(summary.date).toLocaleDateString("en-US", {
               year: "numeric",
@@ -91,14 +91,14 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
             return (
               <article key={summary.id} className="py-10 first:pt-0">
-                <div className="flex items-baseline gap-2 mb-2 text-xs text-gray-400">
+                <div className="flex items-baseline gap-2 mb-2 text-xs text-gray-400 dark:text-gray-500">
                   <time dateTime={new Date(summary.date).toISOString()}>{summaryDateStr}</time>
                   {summary.series && (
                     <>
                       <span>&middot;</span>
                       <Link
                         href={`/series/${summary.series.id}`}
-                        className="font-serif italic text-emerald-800 hover:underline font-medium"
+                        className="font-serif italic text-emerald-800 dark:text-emerald-450 hover:underline font-medium"
                       >
                         Series: {summary.series.name}
                       </Link>
@@ -106,7 +106,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                   )}
                 </div>
 
-                <h2 className="font-serif text-2xl font-bold text-gray-900 mb-4 tracking-tight hover:underline">
+                <h2 className="font-serif text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 tracking-tight hover:underline">
                   <Link href={`/calendar?date=${dateQueryStr}`}>
                     Summary for {summaryDateStr}
                   </Link>
@@ -114,26 +114,26 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
                 {/* Stat Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-gray-50 border border-gray-100 p-3 rounded-sm">
-                    <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                  <div className="bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-gray-805 p-3 rounded-sm">
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 block font-semibold">
                       Efficiency
                     </span>
-                    <span className="text-xl font-serif font-bold text-emerald-800 mt-0.5 block">
+                    <span className="text-xl font-serif font-bold text-emerald-800 dark:text-emerald-455 mt-0.5 block">
                       {Math.round(summary.efficiency)}%
                     </span>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-100 p-3 rounded-sm">
-                    <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                  <div className="bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-gray-805 p-3 rounded-sm">
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 block font-semibold">
                       Targets Completed
                     </span>
-                    <span className="text-xl font-serif font-bold text-gray-800 mt-0.5 block">
+                    <span className="text-xl font-serif font-bold text-gray-800 dark:text-gray-200 mt-0.5 block">
                       {summary.targetsAchievedCount} / {summary.targetsSetCount}
                     </span>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-100 p-3 rounded-sm col-span-2">
-                    <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                  <div className="bg-gray-50 dark:bg-slate-800/40 border border-gray-100 dark:border-gray-805 p-3 rounded-sm col-span-2">
+                    <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 block font-semibold">
                       Mapped Tracks
                     </span>
                     <div className="flex flex-wrap gap-1 mt-1">
@@ -146,13 +146,13 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                       ).map((trackName) => (
                         <span
                           key={trackName}
-                          className="text-[9px] bg-emerald-50 text-emerald-800 px-1.5 py-0.2 rounded-sm font-semibold border border-emerald-100"
+                          className="text-[9px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-450 px-1.5 py-0.2 rounded-sm font-semibold border border-emerald-100 dark:border-emerald-900/30"
                         >
                           {trackName}
                         </span>
                       ))}
                       {dayTargets.filter((t) => t.subtopic).length === 0 && (
-                        <span className="text-[10px] text-gray-400 italic font-medium">None</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 italic font-medium">None</span>
                       )}
                     </div>
                   </div>
@@ -162,13 +162,13 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                 <div className="space-y-4">
                   {achievedTargets.length > 0 && (
                     <div>
-                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">
+                      <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-450 uppercase tracking-wider block mb-1">
                         Achieved
                       </span>
                       <ul className="space-y-1 pl-1">
                         {achievedTargets.map((t) => (
-                          <li key={t.id} className="text-xs text-gray-700 flex items-start gap-2">
-                            <span className="text-emerald-700 font-bold">✓</span>
+                          <li key={t.id} className="text-xs text-gray-700 dark:text-gray-200 flex items-start gap-2">
+                            <span className="text-emerald-700 dark:text-emerald-450 font-bold">✓</span>
                             <span>{t.text}</span>
                           </li>
                         ))}
@@ -178,13 +178,13 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
                   {missedTargets.length > 0 && (
                     <div>
-                      <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider block mb-1">
+                      <span className="text-[10px] font-bold text-red-700 dark:text-red-450 uppercase tracking-wider block mb-1">
                         Missed / Left
                       </span>
                       <ul className="space-y-1 pl-1">
                         {missedTargets.map((t) => (
-                          <li key={t.id} className="text-xs text-gray-400 flex items-start gap-2">
-                            <span className="text-red-400 font-bold">✗</span>
+                          <li key={t.id} className="text-xs text-gray-400 dark:text-gray-500 flex items-start gap-2">
+                            <span className="text-red-400 dark:text-red-500 font-bold">✗</span>
                             <span className="line-through">{t.text}</span>
                           </li>
                         ))}
@@ -193,10 +193,10 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                   )}
                 </div>
 
-                <div className="mt-6 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
+                <div className="mt-6 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-xs">
                   <Link
                     href={`/calendar?date=${dateQueryStr}`}
-                    className="font-semibold text-emerald-805 hover:underline"
+                    className="font-semibold text-emerald-800 dark:text-emerald-450 hover:underline"
                   >
                     View detailed summary in calendar &rarr;
                   </Link>

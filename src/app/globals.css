@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #faf9f6; /* Warm off-white/cream */
   --foreground: #111827; /* Dark ink gray */
+}
+
+.dark {
+  --background: #0b0f19; /* Rich dark blue-gray */
+  --foreground: #f9fafb; /* Off-white / light gray */
 }
 
 @theme {
@@ -13,9 +20,10 @@
 }
 
 body {
-  background-color: #faf9f6;
-  color: #111827;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Custom editorial styles for article content */
@@ -23,6 +31,10 @@ body {
   font-family: var(--font-serif);
   line-height: 1.7;
   color: #374151; /* charcoal */
+}
+
+.dark .prose {
+  color: #d1d5db; /* light gray */
 }
 
 .prose p {
@@ -38,10 +50,18 @@ body {
   margin-bottom: 0.75rem;
 }
 
+.dark .prose h1, .dark .prose h2, .dark .prose h3, .dark .prose h4 {
+  color: #f3f4f6;
+}
+
 .prose h1 {
   font-size: 1.875rem;
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 0.5rem;
+}
+
+.dark .prose h1 {
+  border-bottom-color: #1f2937;
 }
 
 .prose h2 {
@@ -70,6 +90,11 @@ body {
   margin: 1.5rem 0;
 }
 
+.dark .prose blockquote {
+  border-left-color: #10b981; /* emerald-500 accent */
+  color: #9ca3af;
+}
+
 .prose code {
   font-family: monospace;
   font-size: 0.9em;
@@ -77,6 +102,11 @@ body {
   padding: 0.15rem 0.3rem;
   border-radius: 4px;
   color: #111827;
+}
+
+.dark .prose code {
+  background-color: #1e293b;
+  color: #e2e8f0;
 }
 
 .prose pre {
@@ -89,9 +119,15 @@ body {
   margin-bottom: 1.25rem;
 }
 
+.dark .prose pre {
+  background-color: #0b0f19;
+  border: 1px solid #1f2937;
+}
+
 .prose pre code {
   background-color: transparent;
   padding: 0;
   color: inherit;
   font-size: inherit;
 }
+

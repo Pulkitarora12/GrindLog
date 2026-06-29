@@ -5,6 +5,7 @@ import "./globals.css";
 import { isAuthorized, logout } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PROFILE_LINKS } from "@/lib/links";
+import DarkModeToggle from "@/components/DarkModeToggle";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,46 +39,69 @@ export default async function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${lora.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#faf9f6] text-[#111827] font-sans">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const savedTheme = localStorage.getItem('theme');
+                  const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                  const activeTheme = savedTheme || systemTheme;
+                  if (activeTheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {
+                  console.error('Failed to apply theme', e);
+                }
+              })()
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans transition-colors duration-300">
         {/* Navigation Header */}
-        <header className="border-b border-gray-200 bg-white">
+        <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 transition-colors duration-300">
           <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="font-serif text-2xl font-bold tracking-tight hover:opacity-80">
-              GrindLog<span className="text-emerald-700">.</span>
+              GrindLog<span className="text-emerald-700 dark:text-emerald-500">.</span>
             </Link>
 
             {/* Navigation & Profile links */}
             <div className="flex items-center gap-6">
-              <nav className="flex items-center gap-6 text-sm font-medium text-gray-600">
-                <Link href="/" className="hover:text-gray-900 transition-colors">
+              <nav className="flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-300">
+                <Link href="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Dashboard
                 </Link>
-                <Link href="/feed" className="hover:text-gray-900 transition-colors">
+                <Link href="/feed" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Feed
                 </Link>
-                <Link href="/calendar" className="hover:text-gray-900 transition-colors">
+                <Link href="/calendar" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Calendar
                 </Link>
-                <Link href="/tracks" className="hover:text-gray-900 transition-colors">
+                <Link href="/tracks" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Tracks
                 </Link>
-                <Link href="/series" className="hover:text-gray-900 transition-colors">
+                <Link href="/series" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Series
                 </Link>
               </nav>
 
               {/* Vertical divider */}
-              <div className="h-4 w-px bg-gray-200" />
+              <div className="h-4 w-px bg-gray-200 dark:bg-gray-800" />
 
               {/* Profile links */}
-              <div className="flex items-center gap-4 text-gray-400">
+              <div className="flex items-center gap-4 text-gray-400 dark:text-gray-500">
                 <a
                   href={PROFILE_LINKS.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-emerald-800 transition-colors flex items-center"
+                  className="hover:text-emerald-800 dark:hover:text-emerald-500 transition-colors flex items-center"
                   title="GitHub"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -88,7 +112,7 @@ export default async function RootLayout({
                   href={PROFILE_LINKS.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-emerald-800 transition-colors flex items-center"
+                  className="hover:text-emerald-800 dark:hover:text-emerald-500 transition-colors flex items-center"
                   title="LinkedIn"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -99,13 +123,19 @@ export default async function RootLayout({
                   href={PROFILE_LINKS.leetcode}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-emerald-800 transition-colors flex items-center"
+                  className="hover:text-emerald-800 dark:hover:text-emerald-500 transition-colors flex items-center"
                   title="LeetCode"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                     <path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414 0-1.954l-4.995-4.986c-.54-.54-1.414-.54-1.954 0l-.396.396c-.54.54-.54 1.414 0 1.954l3.167 3.167c.54.54.54 1.414 0 1.954l-.396.396c-.54.54-1.414.54-1.954 0l-4.143-4.143c-.54-.54-.54-1.414 0-1.954l4.143-4.143c.54-.54 1.414-.54 1.954 0l.396.396c.54.54 1.414.54 1.954 0l4.143-4.143c.54-.54.54-1.414 0-1.954l-2.396-2.396C15.114.153 14.357 0 13.483 0z"/>
                   </svg>
                 </a>
+
+                {/* Vertical divider */}
+                <div className="h-4 w-px bg-gray-200 dark:bg-gray-800" />
+
+                {/* Theme Toggle Button */}
+                <DarkModeToggle />
               </div>
             </div>
           </div>
@@ -117,12 +147,12 @@ export default async function RootLayout({
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 bg-white py-6 text-center text-xs text-gray-500">
+        <footer className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 py-6 text-center text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
           <div className="mx-auto max-w-5xl px-6 flex items-center justify-center gap-4">
             <span>&copy; {new Date().getFullYear()} GrindLog. Built with Next.js, Prisma, and Vercel.</span>
             {isAdmin && (
               <form action={handleLogout} className="inline">
-                <button type="submit" className="text-xs text-red-600 hover:underline cursor-pointer">
+                <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline cursor-pointer">
                   Logout Admin
                 </button>
               </form>

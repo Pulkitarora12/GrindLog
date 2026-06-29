@@ -80,28 +80,28 @@ export default function MonthlyCalendar({
   const summaryDateSet = useMemo(() => new Set(summaryDates), [summaryDates]);
 
   return (
-    <div className="border border-gray-200 bg-white p-5 rounded-sm max-w-sm w-full mx-auto md:mx-0">
+    <div className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 rounded-sm max-w-sm w-full mx-auto md:mx-0 transition-colors duration-300">
       {/* Month Navigator Header */}
-      <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+      <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-800 pb-2">
         <button
           onClick={handlePrevMonth}
-          className="text-gray-500 hover:text-gray-900 font-bold p-1 text-sm cursor-pointer"
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-bold p-1 text-sm cursor-pointer"
         >
           &larr;
         </button>
-        <span className="font-serif font-bold text-gray-900 text-sm">
+        <span className="font-serif font-bold text-gray-900 dark:text-gray-100 text-sm">
           {monthName} {currentYear}
         </span>
         <button
           onClick={handleNextMonth}
-          className="text-gray-500 hover:text-gray-900 font-bold p-1 text-sm cursor-pointer"
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-bold p-1 text-sm cursor-pointer"
         >
           &rarr;
         </button>
       </div>
 
       {/* Week Day Labels */}
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
         <span>Su</span>
         <span>Mo</span>
         <span>Tu</span>
@@ -128,13 +128,13 @@ export default function MonthlyCalendar({
               onClick={() => handleDateClick(day)}
               className={`aspect-square flex flex-col items-center justify-center text-xs relative rounded-sm transition-colors cursor-pointer ${
                 isSelected
-                  ? "bg-gray-900 text-white font-bold"
-                  : "hover:bg-gray-100 text-gray-700"
+                  ? "bg-gray-900 dark:bg-emerald-700 text-white font-bold"
+                  : "hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300"
               }`}
             >
               <span>{day.getDate()}</span>
               {hasSummary && !isSelected && (
-                <span className="w-1 h-1 bg-emerald-700 rounded-full absolute bottom-1" />
+                <span className="w-1 h-1 bg-emerald-700 dark:bg-emerald-400 rounded-full absolute bottom-1" />
               )}
             </button>
           );

@@ -42,15 +42,15 @@ export default function FeedFilters({
   const hasActiveFilters = activeTrackId || activeSeriesId;
 
   return (
-    <div className="border border-gray-200 bg-white p-4 rounded-sm flex flex-wrap gap-4 items-center justify-between">
+    <div className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 rounded-sm flex flex-wrap gap-4 items-center justify-between transition-colors duration-300">
       <div className="flex flex-wrap gap-4 items-center text-sm">
         {/* Track Filter */}
         <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Track:</span>
+          <span className="text-gray-400 dark:text-gray-500 text-xs font-semibold uppercase tracking-wider">Track:</span>
           <select
             value={activeTrackId}
             onChange={(e) => handleFilterChange("trackId", e.target.value)}
-            className="border border-gray-300 rounded-sm px-2 py-1 text-xs bg-white focus:outline-none cursor-pointer"
+            className="border border-gray-300 dark:border-gray-700 rounded-sm px-2 py-1 text-xs bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
           >
             <option value="">All Tracks</option>
             {tracks.map((t) => (
@@ -63,11 +63,11 @@ export default function FeedFilters({
 
         {/* Series Filter */}
         <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Series:</span>
+          <span className="text-gray-400 dark:text-gray-500 text-xs font-semibold uppercase tracking-wider">Series:</span>
           <select
             value={activeSeriesId}
             onChange={(e) => handleFilterChange("seriesId", e.target.value)}
-            className="border border-gray-300 rounded-sm px-2 py-1 text-xs bg-white focus:outline-none cursor-pointer"
+            className="border border-gray-300 dark:border-gray-700 rounded-sm px-2 py-1 text-xs bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
           >
             <option value="">All Series</option>
             {series.map((s) => (
@@ -83,7 +83,7 @@ export default function FeedFilters({
       {hasActiveFilters && (
         <button
           onClick={() => router.push("/feed")}
-          className="text-xs text-red-600 hover:underline font-semibold cursor-pointer"
+          className="text-xs text-red-600 dark:text-red-400 hover:underline font-semibold cursor-pointer"
         >
           Clear Filters
         </button>

@@ -21,22 +21,22 @@ export default async function SeriesDetailPage({ params }: SeriesDetailPageProps
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
       {/* Series Metadata Header */}
-      <div className="border-b border-gray-200 pb-6">
+      <div className="border-b border-gray-200 dark:border-gray-800 pb-6">
         <Link
           href="/series"
-          className="text-xs font-semibold text-emerald-800 hover:underline inline-flex items-center gap-1.5 mb-4"
+          className="text-xs font-semibold text-emerald-800 dark:text-emerald-450 hover:underline inline-flex items-center gap-1.5 mb-4"
         >
           &larr; All Collections
         </Link>
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 mb-2">
+        <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-2">
           {series.name}
         </h1>
         {series.description ? (
-          <p className="text-gray-600 font-serif italic text-sm leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-400 font-serif italic text-sm leading-relaxed">
             {series.description}
           </p>
         ) : (
-          <p className="text-gray-400 font-serif italic text-sm">
+          <p className="text-gray-400 dark:text-gray-500 font-serif italic text-sm">
             No description provided.
           </p>
         )}
@@ -44,7 +44,7 @@ export default async function SeriesDetailPage({ params }: SeriesDetailPageProps
 
       {/* Sequential Day Summaries Timeline */}
       {series.daySummaries.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-gray-200 rounded-sm text-gray-400">
+        <div className="text-center py-16 border border-dashed border-gray-200 dark:border-gray-800 rounded-sm text-gray-400 dark:text-gray-500">
           No days have been logged in this series yet. Close your first day from the dashboard to add to this series!
         </div>
       ) : (
@@ -60,43 +60,43 @@ export default async function SeriesDetailPage({ params }: SeriesDetailPageProps
             return (
               <div
                 key={summary.id}
-                className="border border-gray-200 bg-white p-5 rounded-sm flex flex-col justify-between hover:border-emerald-700 transition-colors"
+                className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 rounded-sm flex flex-col justify-between hover:border-emerald-700 dark:hover:border-emerald-500 transition-all duration-300"
               >
                 <div>
                   <div className="flex justify-between items-baseline mb-2">
-                    <span className="font-serif italic font-bold text-emerald-800 text-sm">
+                    <span className="font-serif italic font-bold text-emerald-800 dark:text-emerald-450 text-sm">
                       Day {index + 1}
                     </span>
-                    <span className="text-[10px] text-gray-400">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
                       {summaryDateStr}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="bg-gray-50 p-2.5 rounded-sm border border-gray-100">
-                      <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                    <div className="bg-gray-50 dark:bg-slate-800/40 p-2.5 rounded-sm border border-gray-100 dark:border-gray-800">
+                      <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 block font-semibold">
                         Efficiency
                       </span>
-                      <span className="text-xl font-serif font-bold text-emerald-800 block mt-0.5">
+                      <span className="text-xl font-serif font-bold text-emerald-800 dark:text-emerald-450 block mt-0.5">
                         {Math.round(summary.efficiency)}%
                       </span>
                     </div>
 
-                    <div className="bg-gray-50 p-2.5 rounded-sm border border-gray-100">
-                      <span className="text-[9px] uppercase tracking-wider text-gray-400 block font-semibold">
+                    <div className="bg-gray-50 dark:bg-slate-800/40 p-2.5 rounded-sm border border-gray-100 dark:border-gray-800">
+                      <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 block font-semibold">
                         Targets Set
                       </span>
-                      <span className="text-xl font-serif font-bold text-gray-800 block mt-0.5">
+                      <span className="text-xl font-serif font-bold text-gray-800 dark:text-gray-200 block mt-0.5">
                         {summary.targetsAchievedCount} / {summary.targetsSetCount}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
+                <div className="mt-5 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-xs">
                   <Link
                     href={`/calendar?date=${dateQueryStr}`}
-                    className="font-semibold text-emerald-855 hover:underline flex items-center gap-1"
+                    className="font-semibold text-emerald-800 dark:text-emerald-455 hover:underline flex items-center gap-1"
                   >
                     View Targets Details &rarr;
                   </Link>

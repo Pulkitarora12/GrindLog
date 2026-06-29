@@ -178,25 +178,25 @@ export default function DashboardTargetList({
   return (
     <div className="space-y-6">
       {error && (
-        <div className="border border-red-200 bg-red-50 text-red-800 px-4 py-3 rounded-sm text-sm">
+        <div className="border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-400 px-4 py-3 rounded-sm text-sm">
           {error}
         </div>
       )}
 
       {/* Progress Header */}
       {totalCount > 0 && (
-        <div className="border border-gray-200 bg-white p-5 rounded-sm space-y-3">
+        <div className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 rounded-sm space-y-3 transition-colors duration-300">
           <div className="flex justify-between items-baseline">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
               {activeDateStr === todayStr ? "Today's" : "Yesterday's"} Targets Progress
             </span>
-            <span className="text-sm font-bold text-gray-900">
+            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
               {completedCount} / {totalCount} Completed ({progressPercentage}%)
             </span>
           </div>
-          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-gray-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
             <div
-              className="bg-emerald-800 h-full transition-all duration-500 ease-out"
+              className="bg-emerald-800 dark:bg-emerald-500 h-full transition-all duration-500 ease-out"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
@@ -204,29 +204,29 @@ export default function DashboardTargetList({
       )}
 
       {/* Target Checklist */}
-      <div className="border border-gray-200 bg-white rounded-sm divide-y divide-gray-100">
-        <div className="p-4 bg-gray-50 flex items-center justify-between">
-          <h3 className="font-serif font-bold text-gray-900 text-sm">
+      <div className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 rounded-sm divide-y divide-gray-100 dark:divide-gray-800 transition-colors duration-300">
+        <div className="p-4 bg-gray-50 dark:bg-slate-800/30 flex items-center justify-between">
+          <h3 className="font-serif font-bold text-gray-900 dark:text-gray-100 text-sm">
             Checklist for {new Date(activeDateStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </h3>
           {isClosed && (
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-gray-200 text-gray-700 text-[10px] font-bold uppercase tracking-wide">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-gray-200 dark:bg-slate-850 text-gray-700 dark:text-gray-300 text-[10px] font-bold uppercase tracking-wide">
               🔒 Closed
             </span>
           )}
         </div>
 
         {targets.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-400">
+          <div className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">
             No targets set for this date yet. Use the form below to plan your day.
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {targets.map((t) => (
               <div
                 key={t.id}
                 className={`p-4 flex items-center justify-between gap-4 transition-colors ${
-                  t.done ? "bg-emerald-50/10" : ""
+                  t.done ? "bg-emerald-50/10 dark:bg-emerald-950/5" : ""
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -235,18 +235,18 @@ export default function DashboardTargetList({
                     checked={t.done}
                     onChange={() => handleToggleDone(t.id, t.done)}
                     disabled={!isAdmin || isClosed}
-                    className="w-4 h-4 rounded-sm border-gray-300 text-emerald-800 focus:ring-emerald-800 cursor-pointer disabled:cursor-not-allowed"
+                    className="w-4 h-4 rounded-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-500 focus:ring-emerald-800 dark:focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
                   />
                   <div className="min-w-0">
                     <span
-                      className={`text-sm text-gray-900 block ${
-                        t.done ? "line-through text-gray-400" : ""
+                      className={`text-sm text-gray-900 dark:text-gray-200 block ${
+                        t.done ? "line-through text-gray-400 dark:text-gray-500" : ""
                       }`}
                     >
                       {t.text}
                     </span>
                     {t.subtopic && (
-                      <span className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-sm border border-emerald-200 bg-emerald-50 text-emerald-800">
+                      <span className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-sm border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-450">
                         {t.subtopic.track.name}: {t.subtopic.name}
                       </span>
                     )}
@@ -256,7 +256,7 @@ export default function DashboardTargetList({
                 {isAdmin && !isClosed && (
                   <button
                     onClick={() => handleDelete(t.id)}
-                    className="text-xs text-gray-400 hover:text-red-700 transition-colors p-1"
+                    className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 transition-colors p-1 cursor-pointer"
                     title="Delete target"
                   >
                     <svg
@@ -285,9 +285,9 @@ export default function DashboardTargetList({
       {isAdmin && !isClosed && (
         <form
           onSubmit={handleAddTarget}
-          className="border border-gray-200 bg-white p-5 rounded-sm space-y-4"
+          className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 rounded-sm space-y-4 transition-colors duration-300"
         >
-          <h4 className="font-serif font-bold text-gray-900 text-sm border-b border-gray-100 pb-2">
+          <h4 className="font-serif font-bold text-gray-900 dark:text-gray-100 text-sm border-b border-gray-100 dark:border-gray-800 pb-2">
             Add Target for {activeDateStr === todayStr ? "Today" : "Yesterday"}
           </h4>
 
@@ -295,7 +295,7 @@ export default function DashboardTargetList({
             <div className="sm:col-span-2">
               <label
                 htmlFor="target-text"
-                className="block text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1"
+                className="block text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1"
               >
                 Target Description
               </label>
@@ -307,14 +307,14 @@ export default function DashboardTargetList({
                 value={newTargetText}
                 onChange={(e) => setNewTargetText(e.target.value)}
                 disabled={isPending}
-                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white focus:border-gray-900 focus:outline-none"
+                className="w-full rounded-sm border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
               />
             </div>
 
             <div>
               <label
                 htmlFor="subtopic-select"
-                className="block text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1"
+                className="block text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1"
               >
                 Link Subtopic (Optional)
               </label>
@@ -323,7 +323,7 @@ export default function DashboardTargetList({
                 value={selectedSubtopicId}
                 onChange={(e) => setSelectedSubtopicId(e.target.value)}
                 disabled={isPending}
-                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white focus:border-gray-900 focus:outline-none"
+                className="w-full rounded-sm border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none cursor-pointer"
               >
                 <option value="">None</option>
                 {sortedSubtopics.map((s) => (
@@ -338,7 +338,7 @@ export default function DashboardTargetList({
           <button
             type="submit"
             disabled={isPending || !newTargetText.trim()}
-            className="w-full sm:w-auto rounded-sm border border-gray-900 bg-gray-900 px-5 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50 transition-colors font-medium cursor-pointer"
+            className="w-full sm:w-auto rounded-sm border border-gray-900 dark:border-slate-700 bg-gray-900 dark:bg-slate-800 px-5 py-2 text-sm text-white hover:bg-gray-800 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors font-medium cursor-pointer"
           >
             Add Target
           </button>
@@ -347,12 +347,12 @@ export default function DashboardTargetList({
 
       {/* End Day Form Section */}
       {isAdmin && !isClosed && targets.length > 0 && (
-        <div className="border border-emerald-800/10 bg-emerald-50/10 p-5 rounded-sm space-y-4">
+        <div className="border border-emerald-800/10 dark:border-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/5 p-5 rounded-sm space-y-4 transition-colors duration-300">
           <div>
-            <h4 className="font-serif font-bold text-emerald-950 text-sm">
+            <h4 className="font-serif font-bold text-emerald-950 dark:text-emerald-300 text-sm">
               Ready to Close {activeDateStr === todayStr ? "Today" : "Yesterday"}?
             </h4>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Ending the day will calculate your target efficiency and freeze these targets from any further modifications.
             </p>
           </div>
@@ -362,7 +362,7 @@ export default function DashboardTargetList({
             <div className="w-full sm:max-w-xs">
               <label
                 htmlFor="close-date-select"
-                className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1 font-sans cursor-pointer"
+                className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-450 mb-1 font-sans cursor-pointer"
               >
                 Date to Close
               </label>
@@ -380,7 +380,7 @@ export default function DashboardTargetList({
                   });
                 }}
                 disabled={isPending}
-                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white text-gray-800 font-semibold font-sans focus:border-emerald-800 focus:outline-none cursor-pointer"
+                className="w-full rounded-sm border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-250 font-semibold font-sans focus:border-emerald-800 dark:focus:border-emerald-500 focus:outline-none cursor-pointer"
               >
                 <option value={todayStr}>
                   {(() => {
@@ -411,7 +411,7 @@ export default function DashboardTargetList({
             <div className="w-full sm:max-w-xs">
               <label
                 htmlFor="series-select"
-                className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1"
+                className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-450 mb-1"
               >
                 Associate with Series (Optional)
               </label>
@@ -420,7 +420,7 @@ export default function DashboardTargetList({
                 value={selectedSeriesId}
                 onChange={(e) => setSelectedSeriesId(e.target.value)}
                 disabled={isPending}
-                className="w-full rounded-sm border border-gray-300 px-3 py-2 text-sm bg-white focus:border-gray-900 focus:outline-none"
+                className="w-full rounded-sm border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-200 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none cursor-pointer"
               >
                 <option value="">No Series</option>
                 {seriesList.map((s) => (
@@ -434,7 +434,7 @@ export default function DashboardTargetList({
             <button
               onClick={handleEndDay}
               disabled={isPending}
-              className="w-full sm:w-auto rounded-sm border border-emerald-900 bg-emerald-800 px-6 py-2.5 text-sm text-white hover:bg-emerald-900 disabled:opacity-50 transition-colors font-semibold tracking-wide cursor-pointer"
+              className="w-full sm:w-auto rounded-sm border border-emerald-900 dark:border-emerald-700 bg-emerald-800 dark:bg-emerald-700 px-6 py-2.5 text-sm text-white hover:bg-emerald-900 dark:hover:bg-emerald-850 disabled:opacity-50 transition-colors font-semibold tracking-wide cursor-pointer"
             >
               End Day &amp; Generate Summary
             </button>
