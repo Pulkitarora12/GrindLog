@@ -38,7 +38,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${lora.variable} h-full antialiased`}
+      className={`${inter.variable} ${lora.variable} h-full antialiased scroll-smooth`}
       suppressHydrationWarning
     >
       <head>

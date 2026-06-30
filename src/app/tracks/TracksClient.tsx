@@ -149,137 +149,187 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
         </div>
       )}
 
-      {/* Tracks Grid */}
+      {/* Tracks Layout */}
       {tracks.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-gray-200 dark:border-gray-800 rounded-sm text-gray-400 dark:text-gray-500">
           No tracks created yet. Use the form above to add a track like "DSA", "Dev", or "DevOps".
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {tracks.map((track) => {
-            const completedCount = track.subtopics.filter((s) => s.status === SubtopicStatus.DONE).length;
-            const totalCount = track.subtopics.length;
-            const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        <div className="space-y-6">
+          {/* Mobile Track Quick Links */}
+          <div className="lg:hidden flex flex-wrap gap-2 pb-2">
+            {tracks.map((track) => (
+              <a
+                key={track.id}
+                href={`#track-${track.id}`}
+                className="px-3 py-1.5 bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-gray-850 hover:border-emerald-800/30 dark:hover:border-emerald-500/30 text-xs font-medium rounded-sm text-gray-700 dark:text-gray-300 hover:text-emerald-800 dark:hover:text-emerald-450 transition-colors"
+              >
+                {track.name}
+              </a>
+            ))}
+          </div>
 
-            return (
-              <div key={track.id} className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-6 rounded-sm flex flex-col justify-between transition-colors duration-300">
-                <div>
-                  {/* Track Header */}
-                  <div className="flex justify-between items-baseline mb-4">
-                    <div>
-                      <h2 className="text-xl font-serif font-bold text-gray-900 dark:text-gray-100">{track.name}</h2>
-                      <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-                        {completedCount}/{totalCount} Completed ({percentage}%)
-                      </span>
-                    </div>
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDeleteTrack(track.id)}
-                        disabled={isPending}
-                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 transition-colors cursor-pointer"
+          <div className="flex flex-col lg:flex-row gap-10">
+            {/* Left Sticky Navbar */}
+            <aside className="lg:w-56 shrink-0 lg:sticky lg:top-6 lg:h-fit hidden lg:block">
+              <div className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 rounded-sm space-y-4">
+                <h2 className="font-serif text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider border-b border-gray-200 dark:border-gray-800 pb-2">
+                  Tracks
+                </h2>
+                <nav className="flex flex-col gap-1.5">
+                  {tracks.map((track) => {
+                    const completedCount = track.subtopics.filter((s) => s.status === SubtopicStatus.DONE).length;
+                    const totalCount = track.subtopics.length;
+                    const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                    return (
+                      <a
+                        key={track.id}
+                        href={`#track-${track.id}`}
+                        className="flex justify-between items-center px-3 py-2 text-sm font-medium rounded-sm text-gray-600 dark:text-gray-400 hover:text-emerald-800 dark:hover:text-emerald-450 hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors"
                       >
-                        Delete Track
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Subtopics Checklist */}
-                  <div className="space-y-2 mb-6">
-                    {track.subtopics.length === 0 ? (
-                      <div className="text-xs text-gray-400 dark:text-gray-500 italic py-3">
-                        No subtopics yet. Add one below.
-                      </div>
-                    ) : (
-                      track.subtopics.map((subtopic) => (
-                        <div
-                          key={subtopic.id}
-                          className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 dark:hover:bg-slate-800/40 border-b border-gray-100 dark:border-gray-800 last:border-0 rounded-sm"
-                        >
-                          <span
-                            className={`text-sm ${
-                              subtopic.status === SubtopicStatus.DONE
-                                ? "line-through text-gray-400 dark:text-gray-500"
-                                : subtopic.status === SubtopicStatus.IN_PROGRESS
-                                ? "text-gray-900 dark:text-gray-100 font-medium"
-                                : "text-gray-700 dark:text-gray-300"
-                            }`}
-                          >
-                            {subtopic.name}
-                          </span>
-
-                          <div className="flex items-center gap-2">
-                            {/* Status Selector */}
-                            <select
-                              value={subtopic.status}
-                              onChange={(e) =>
-                                handleStatusChange(
-                                  subtopic.id,
-                                  e.target.value as SubtopicStatus
-                                )
-                              }
-                              disabled={!isAdmin || isPending}
-                              className={`text-xs border rounded-sm px-1.5 py-0.5 bg-white dark:bg-slate-900 cursor-pointer ${
-                                subtopic.status === SubtopicStatus.DONE
-                                  ? "border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-450"
-                                  : subtopic.status === SubtopicStatus.IN_PROGRESS
-                                  ? "border-amber-200 dark:border-amber-900/30 text-amber-800 dark:text-amber-450"
-                                  : "border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-450"
-                              }`}
-                            >
-                              <option value={SubtopicStatus.NOT_STARTED}>Not Started</option>
-                              <option value={SubtopicStatus.IN_PROGRESS}>In Progress</option>
-                              <option value={SubtopicStatus.DONE}>Completed</option>
-                            </select>
-
-                            {/* Delete Button */}
-                            {isAdmin && (
-                              <button
-                                onClick={() => handleDeleteSubtopic(subtopic.id)}
-                                disabled={isPending}
-                                className="text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 text-xs px-1 cursor-pointer"
-                                title="Delete subtopic"
-                              >
-                                &times;
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Add Subtopic Form */}
-                {isAdmin && (
-                  <form
-                    onSubmit={(e) => handleCreateSubtopic(e, track.id)}
-                    className="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Add subtopic (e.g. Arrays)"
-                      value={newSubtopicNames[track.id] || ""}
-                      onChange={(e) =>
-                        setNewSubtopicNames((prev) => ({
-                          ...prev,
-                          [track.id]: e.target.value,
-                        }))
-                      }
-                      disabled={isPending}
-                      className="flex-1 rounded-sm border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isPending}
-                      className="rounded-sm border border-gray-200 dark:border-gray-750 px-3 py-1 text-xs bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
-                    >
-                      Add
-                    </button>
-                  </form>
-                )}
+                        <span className="truncate">{track.name}</span>
+                        <span className="text-[10px] bg-gray-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-full text-gray-500 dark:text-gray-400 font-mono">
+                          {percentage}%
+                        </span>
+                      </a>
+                    );
+                  })}
+                </nav>
               </div>
-            );
-          })}
+            </aside>
+
+            {/* Tracks Grid */}
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+              {tracks.map((track) => {
+                const completedCount = track.subtopics.filter((s) => s.status === SubtopicStatus.DONE).length;
+                const totalCount = track.subtopics.length;
+                const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+                return (
+                  <div
+                    key={track.id}
+                    id={`track-${track.id}`}
+                    className="scroll-mt-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-6 rounded-sm flex flex-col justify-between transition-colors duration-300"
+                  >
+                    <div>
+                      {/* Track Header */}
+                      <div className="flex justify-between items-baseline mb-4">
+                        <div>
+                          <h2 className="text-xl font-serif font-bold text-gray-900 dark:text-gray-100">{track.name}</h2>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+                            {completedCount}/{totalCount} Completed ({percentage}%)
+                          </span>
+                        </div>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteTrack(track.id)}
+                            disabled={isPending}
+                            className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 transition-colors cursor-pointer"
+                          >
+                            Delete Track
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Subtopics Checklist */}
+                      <div className="space-y-2 mb-6">
+                        {track.subtopics.length === 0 ? (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 italic py-3">
+                            No subtopics yet. Add one below.
+                          </div>
+                        ) : (
+                          track.subtopics.map((subtopic) => (
+                            <div
+                              key={subtopic.id}
+                              className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 dark:hover:bg-slate-800/40 border-b border-gray-100 dark:border-gray-800 last:border-0 rounded-sm"
+                            >
+                              <span
+                                className={`text-sm ${
+                                  subtopic.status === SubtopicStatus.DONE
+                                    ? "line-through text-gray-400 dark:text-gray-500"
+                                    : subtopic.status === SubtopicStatus.IN_PROGRESS
+                                    ? "text-gray-900 dark:text-gray-100 font-medium"
+                                    : "text-gray-700 dark:text-gray-300"
+                                }`}
+                              >
+                                {subtopic.name}
+                              </span>
+
+                              <div className="flex items-center gap-2">
+                                {/* Status Selector */}
+                                <select
+                                  value={subtopic.status}
+                                  onChange={(e) =>
+                                    handleStatusChange(
+                                      subtopic.id,
+                                      e.target.value as SubtopicStatus
+                                    )
+                                  }
+                                  disabled={!isAdmin || isPending}
+                                  className={`text-xs border rounded-sm px-1.5 py-0.5 bg-white dark:bg-slate-900 cursor-pointer ${
+                                    subtopic.status === SubtopicStatus.DONE
+                                      ? "border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-450"
+                                      : subtopic.status === SubtopicStatus.IN_PROGRESS
+                                      ? "border-amber-200 dark:border-amber-900/30 text-amber-800 dark:text-amber-450"
+                                      : "border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-450"
+                                  }`}
+                                >
+                                  <option value={SubtopicStatus.NOT_STARTED}>Not Started</option>
+                                  <option value={SubtopicStatus.IN_PROGRESS}>In Progress</option>
+                                  <option value={SubtopicStatus.DONE}>Completed</option>
+                                </select>
+
+                                {/* Delete Button */}
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => handleDeleteSubtopic(subtopic.id)}
+                                    disabled={isPending}
+                                    className="text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 text-xs px-1 cursor-pointer"
+                                    title="Delete subtopic"
+                                  >
+                                    &times;
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Add Subtopic Form */}
+                    {isAdmin && (
+                      <form
+                        onSubmit={(e) => handleCreateSubtopic(e, track.id)}
+                        className="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4"
+                      >
+                        <input
+                          type="text"
+                          placeholder="Add subtopic (e.g. Arrays)"
+                          value={newSubtopicNames[track.id] || ""}
+                          onChange={(e) =>
+                            setNewSubtopicNames((prev) => ({
+                              ...prev,
+                              [track.id]: e.target.value,
+                            }))
+                          }
+                          disabled={isPending}
+                          className="flex-1 rounded-sm border border-gray-200 dark:border-gray-700 px-2.5 py-1 text-xs bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 focus:border-gray-900 dark:focus:border-gray-100 focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isPending}
+                          className="rounded-sm border border-gray-200 dark:border-gray-750 px-3 py-1 text-xs bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
