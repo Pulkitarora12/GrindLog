@@ -232,6 +232,93 @@ export async function deleteSeries(id: string) {
   }
 }
 
+export async function endSeries(id: string, endingReason: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!endingReason || endingReason.trim() === "") {
+    throw new Error("Verdict or reason is required to end the series");
+  }
+
+  try {
+    const series = await prisma.series.update({
+      where: { id },
+      data: {
+        isEnded: true,
+        endedAt: new Date(),
+        endingReason: endingReason.trim(),
+      },
+    });
+    revalidatePath("/series");
+    revalidatePath(`/series/${id}`);
+    revalidatePath("/");
+    revalidatePath("/feed");
+    revalidatePath("/calendar");
+    return series;
+  } catch (error: any) {
+    console.error("Failed to end series:", error);
+    throw new Error(error.message || "Failed to end series");
+  }
+}
+
+export async function reopenSeries(id: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const series = await prisma.series.update({
+      where: { id },
+      data: {
+        isEnded: false,
+        endedAt: null,
+        endingReason: null,
+      },
+    });
+    revalidatePath("/series");
+    revalidatePath(`/series/${id}`);
+    revalidatePath("/");
+    revalidatePath("/feed");
+    revalidatePath("/calendar");
+    return series;
+  } catch (error) {
+    console.error("Failed to reopen series:", error);
+    throw new Error("Failed to reopen series");
+  }
+}
+
+export async function updateSeries(id: string, name: string, description?: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!name || name.trim() === "") {
+    throw new Error("Series name is required");
+  }
+
+  try {
+    const series = await prisma.series.update({
+      where: { id },
+      data: {
+        name: name.trim(),
+        description: description?.trim() || null,
+      },
+    });
+    revalidatePath("/series");
+    revalidatePath(`/series/${id}`);
+    revalidatePath("/");
+    revalidatePath("/feed");
+    revalidatePath("/calendar");
+    return series;
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      throw new Error("A series with this name already exists");
+    }
+    throw new Error(error.message || "Failed to update series");
+  }
+}
+
 // ==========================================
 // DATE HELPERS IMPORTED FROM UTILS
 // ==========================================

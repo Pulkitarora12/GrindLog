@@ -2,12 +2,17 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
-import { createSeries, deleteSeries } from "../actions";
+import { createSeries, deleteSeries, endSeries, reopenSeries, updateSeries } from "../actions";
+import EndSeriesModal from "@/components/EndSeriesModal";
+import EditSeriesModal from "@/components/EditSeriesModal";
 
-interface SeriesItem {
+export interface SeriesItem {
   id: string;
   name: string;
   description: string | null;
+  isEnded: boolean;
+  endedAt: Date | string | null;
+  endingReason: string | null;
   _count: {
     daySummaries: number;
   };
@@ -24,6 +29,10 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // State for End Series Modal & Edit Series Modal
+  const [seriesToEnd, setSeriesToEnd] = useState<SeriesItem | null>(null);
+  const [seriesToEdit, setSeriesToEdit] = useState<SeriesItem | null>(null);
 
   React.useEffect(() => {
     setSeries(initialSeries);
@@ -46,7 +55,12 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this series? The logged entries will not be deleted, but they will no longer belong to this series.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to delete this series? The logged entries will not be deleted, but they will no longer belong to this series."
+      )
+    )
+      return;
 
     setError(null);
     startTransition(async () => {
@@ -58,8 +72,55 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
     });
   };
 
+  const handleEndSeriesSubmit = async (reason: string) => {
+    if (!seriesToEnd) return;
+    const targetId = seriesToEnd.id;
+    await endSeries(targetId, reason);
+  };
+
+  const handleEditSeriesSubmit = async (newName: string, newDescription?: string) => {
+    if (!seriesToEdit) return;
+    await updateSeries(seriesToEdit.id, newName, newDescription);
+  };
+
+  const handleReopen = async (id: string) => {
+    if (!confirm("Are you sure you want to reopen this series?")) return;
+
+    setError(null);
+    startTransition(async () => {
+      try {
+        await reopenSeries(id);
+      } catch (err: any) {
+        setError(err.message || "Failed to reopen series");
+      }
+    });
+  };
+
   return (
     <div className="space-y-8">
+      {/* End Series Modal */}
+      {seriesToEnd && (
+        <EndSeriesModal
+          isOpen={!!seriesToEnd}
+          seriesName={seriesToEnd.name}
+          onClose={() => setSeriesToEnd(null)}
+          onSubmit={handleEndSeriesSubmit}
+          isPending={isPending}
+        />
+      )}
+
+      {/* Edit Series Modal */}
+      {seriesToEdit && (
+        <EditSeriesModal
+          isOpen={!!seriesToEdit}
+          initialName={seriesToEdit.name}
+          initialDescription={seriesToEdit.description}
+          onClose={() => setSeriesToEdit(null)}
+          onSubmit={handleEditSeriesSubmit}
+          isPending={isPending}
+        />
+      )}
+
       {/* Header */}
       <div className="border-b border-gray-200 dark:border-gray-800 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -89,7 +150,10 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
               )}
 
               <div>
-                <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                <label
+                  htmlFor="name"
+                  className="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1"
+                >
                   Series Name
                 </label>
                 <input
@@ -105,7 +169,10 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                <label
+                  htmlFor="description"
+                  className="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1"
+                >
                   Description (Optional)
                 </label>
                 <textarea
@@ -133,7 +200,7 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
         {/* Right: Series List */}
         <div className={isAdmin ? "md:col-span-2 space-y-4" : "md:col-span-3 space-y-4"}>
           <h2 className="font-serif text-lg font-bold text-gray-900 dark:text-gray-100">
-            Active Collections
+            Series Collections
           </h2>
 
           {series.length === 0 ? (
@@ -142,44 +209,121 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {series.map((item) => (
-                <div
-                  key={item.id}
-                  className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 rounded-sm flex flex-col justify-between transition-colors duration-300"
-                >
-                  <div>
-                    <h3 className="font-serif text-base font-bold text-gray-900 dark:text-gray-100 hover:underline">
-                      <Link href={`/series/${item.id}`}>{item.name}</Link>
-                    </h3>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
-                      {item._count.daySummaries} day{item._count.daySummaries !== 1 ? "s" : ""} logged
-                    </p>
-                    {item.description && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-3 line-clamp-2 leading-relaxed italic">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
+              {series.map((item) => {
+                const completionDateStr = item.endedAt
+                  ? new Date(item.endedAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  : null;
 
-                  <div className="mt-6 flex justify-between items-center border-t border-gray-100 dark:border-gray-805 pt-3">
-                    <Link
-                      href={`/series/${item.id}`}
-                      className="text-xs font-semibold text-emerald-800 dark:text-emerald-450 hover:underline"
-                    >
-                      View Entries &rarr;
-                    </Link>
-                    {isAdmin && (
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={isPending}
-                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 transition-colors cursor-pointer"
+                return (
+                  <div
+                    key={item.id}
+                    className={`border ${
+                      item.isEnded
+                        ? "border-amber-200 dark:border-amber-900/40 bg-amber-50/20 dark:bg-amber-950/10"
+                        : "border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900"
+                    } p-5 rounded-sm flex flex-col justify-between transition-colors duration-300`}
+                  >
+                    <div>
+                      <div className="flex justify-between items-start gap-2 mb-1">
+                        <h3 className="font-serif text-base font-bold text-gray-900 dark:text-gray-100 hover:underline">
+                          <Link href={`/series/${item.id}`}>{item.name}</Link>
+                        </h3>
+                        {item.isEnded ? (
+                          <span className="px-2 py-0.5 rounded-xs bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider shrink-0">
+                            Closed
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider shrink-0">
+                            Active
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
+                        {item._count.daySummaries} day{item._count.daySummaries !== 1 ? "s" : ""} logged
+                      </p>
+
+                      {item.description && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-3 line-clamp-2 leading-relaxed italic">
+                          {item.description}
+                        </p>
+                      )}
+
+                      {/* Display Completion Date and Verdict / Reason if Ended */}
+                      {item.isEnded && (
+                        <div className="mt-4 p-3 border border-amber-200/70 dark:border-amber-900/30 bg-amber-100/40 dark:bg-amber-950/20 rounded-xs space-y-1">
+                          {completionDateStr && (
+                            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-900 dark:text-amber-300">
+                              <span>📅 Date of Completion:</span>
+                              <span>{completionDateStr}</span>
+                            </div>
+                          )}
+                          {item.endingReason && (
+                            <div className="text-[11px] text-amber-950 dark:text-amber-200">
+                              <span className="font-semibold">💬 Verdict / Reason:</span>{" "}
+                              <span className="italic">&quot;{item.endingReason}&quot;</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex justify-between items-center border-t border-gray-100 dark:border-gray-800 pt-3">
+                      <Link
+                        href={`/series/${item.id}`}
+                        className="text-xs font-semibold text-emerald-800 dark:text-emerald-450 hover:underline"
                       >
-                        Delete
-                      </button>
-                    )}
+                        View Entries &rarr;
+                      </Link>
+
+                      <div className="flex items-center gap-2">
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => setSeriesToEdit(item)}
+                              disabled={isPending}
+                              className="text-xs font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100 transition-colors cursor-pointer border border-gray-300 dark:border-gray-700 px-2 py-0.5 rounded-xs"
+                              title="Modify Name & Description"
+                            >
+                              Edit
+                            </button>
+
+                            {!item.isEnded ? (
+                              <button
+                                onClick={() => setSeriesToEnd(item)}
+                                disabled={isPending}
+                                className="text-xs font-medium text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 transition-colors cursor-pointer border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded-xs"
+                              >
+                                End Series
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReopen(item.id)}
+                                disabled={isPending}
+                                className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                              >
+                                Reopen
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              disabled={isPending}
+                              className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 transition-colors cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

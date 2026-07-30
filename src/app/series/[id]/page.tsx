@@ -1,6 +1,8 @@
 import { getSeriesWithSummaries } from "../../actions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { isAuthorized } from "@/lib/auth";
+import SeriesDetailHeader from "./SeriesDetailHeader";
 
 interface SeriesDetailPageProps {
   params: Promise<{
@@ -12,7 +14,10 @@ export const revalidate = 0; // Disable static cache to reflect instant database
 
 export default async function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const { id } = await params;
-  const series = await getSeriesWithSummaries(id);
+  const [series, isAdmin] = await Promise.all([
+    getSeriesWithSummaries(id),
+    isAuthorized(),
+  ]);
 
   if (!series) {
     notFound();
@@ -20,27 +25,8 @@ export default async function SeriesDetailPage({ params }: SeriesDetailPageProps
 
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
-      {/* Series Metadata Header */}
-      <div className="border-b border-gray-200 dark:border-gray-800 pb-6">
-        <Link
-          href="/series"
-          className="text-xs font-semibold text-emerald-800 dark:text-emerald-450 hover:underline inline-flex items-center gap-1.5 mb-4"
-        >
-          &larr; All Collections
-        </Link>
-        <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-2">
-          {series.name}
-        </h1>
-        {series.description ? (
-          <p className="text-gray-600 dark:text-gray-400 font-serif italic text-sm leading-relaxed">
-            {series.description}
-          </p>
-        ) : (
-          <p className="text-gray-400 dark:text-gray-500 font-serif italic text-sm">
-            No description provided.
-          </p>
-        )}
-      </div>
+      {/* Series Metadata Header & Controls */}
+      <SeriesDetailHeader series={series} isAdmin={isAdmin} />
 
       {/* Sequential Day Summaries Timeline */}
       {series.daySummaries.length === 0 ? (
