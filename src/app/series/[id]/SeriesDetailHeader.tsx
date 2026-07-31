@@ -5,6 +5,7 @@ import Link from "next/link";
 import { endSeries, reopenSeries, updateSeries } from "../../actions";
 import EndSeriesModal from "@/components/EndSeriesModal";
 import EditSeriesModal from "@/components/EditSeriesModal";
+import { getSeriesTimingInfo } from "@/lib/dateUtils";
 
 interface SeriesDetailHeaderProps {
   series: {
@@ -14,6 +15,7 @@ interface SeriesDetailHeaderProps {
     isEnded: boolean;
     endedAt: Date | string | null;
     endingReason: string | null;
+    createdAt: Date | string;
   };
   isAdmin?: boolean;
 }
@@ -23,6 +25,11 @@ export default function SeriesDetailHeader({ series, isAdmin = false }: SeriesDe
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const { startDateStr, daysAgoText, lastedDaysText } = getSeriesTimingInfo(
+    series.createdAt,
+    series.endedAt
+  );
 
   const completionDateStr = series.endedAt
     ? new Date(series.endedAt).toLocaleDateString("en-US", {
@@ -106,6 +113,11 @@ export default function SeriesDetailHeader({ series, isAdmin = false }: SeriesDe
               </span>
             )}
           </div>
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
+            <span>🗓️ Started: {startDateStr}</span>
+            <span>&middot;</span>
+            <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{daysAgoText}</span>
+          </div>
         </div>
 
         {isAdmin && (
@@ -152,6 +164,12 @@ export default function SeriesDetailHeader({ series, isAdmin = false }: SeriesDe
       {/* Completion info box if series is ended */}
       {series.isEnded && (
         <div className="p-4 border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 rounded-sm space-y-2">
+          {lastedDaysText && (
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-300">
+              <span className="text-base">⏱️</span>
+              <span>{lastedDaysText}</span>
+            </div>
+          )}
           {completionDateStr && (
             <div className="flex items-center gap-2 text-xs font-semibold text-amber-900 dark:text-amber-300">
               <span className="text-base">📅</span>

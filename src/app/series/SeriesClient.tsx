@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useMemo } from "react";
 import Link from "next/link";
 import { createSeries, deleteSeries, endSeries, reopenSeries, updateSeries } from "../actions";
 import EndSeriesModal from "@/components/EndSeriesModal";
 import EditSeriesModal from "@/components/EditSeriesModal";
+import { getSeriesTimingInfo } from "@/lib/dateUtils";
 
 export interface SeriesItem {
   id: string;
@@ -13,6 +14,7 @@ export interface SeriesItem {
   isEnded: boolean;
   endedAt: Date | string | null;
   endingReason: string | null;
+  createdAt: Date | string;
   _count: {
     daySummaries: number;
   };
@@ -37,6 +39,17 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
   React.useEffect(() => {
     setSeries(initialSeries);
   }, [initialSeries]);
+
+  const sortedSeries = useMemo(() => {
+    return [...series].sort((a, b) => {
+      // Active series (isEnded = false) come before ended series (isEnded = true)
+      if (a.isEnded !== b.isEnded) {
+        return a.isEnded ? 1 : -1;
+      }
+      // Order by created date descending (latest created first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [series]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,13 +216,17 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
             Series Collections
           </h2>
 
-          {series.length === 0 ? (
+          {sortedSeries.length === 0 ? (
             <div className="text-center py-16 border border-dashed border-gray-200 dark:border-gray-800 rounded-sm text-gray-400 dark:text-gray-500">
               No series created yet. Start a themed collection using the form on the left.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {series.map((item) => {
+              {sortedSeries.map((item) => {
+                const { startDateStr, daysAgoText, lastedDaysText } = getSeriesTimingInfo(
+                  item.createdAt,
+                  item.endedAt
+                );
                 const completionDateStr = item.endedAt
                   ? new Date(item.endedAt).toLocaleDateString("en-US", {
                       year: "numeric",
@@ -243,9 +260,17 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
                         )}
                       </div>
 
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">
-                        {item._count.daySummaries} day{item._count.daySummaries !== 1 ? "s" : ""} logged
-                      </p>
+                      <div className="space-y-1 mt-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-1.5 text-gray-600 dark:text-gray-400 font-medium">
+                          <span>🗓️ Started: {startDateStr}</span>
+                          <span>&middot;</span>
+                          <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{daysAgoText}</span>
+                        </div>
+
+                        <p className="text-gray-400 dark:text-gray-500 font-medium">
+                          📊 {item._count.daySummaries} day{item._count.daySummaries !== 1 ? "s" : ""} logged
+                        </p>
+                      </div>
 
                       {item.description && (
                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-3 line-clamp-2 leading-relaxed italic">
@@ -253,11 +278,16 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
                         </p>
                       )}
 
-                      {/* Display Completion Date and Verdict / Reason if Ended */}
+                      {/* Display Completion Info if Ended */}
                       {item.isEnded && (
                         <div className="mt-4 p-3 border border-amber-200/70 dark:border-amber-900/30 bg-amber-100/40 dark:bg-amber-950/20 rounded-xs space-y-1">
+                          {lastedDaysText && (
+                            <div className="text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                              <span>⏱️ {lastedDaysText}</span>
+                            </div>
+                          )}
                           {completionDateStr && (
-                            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-900 dark:text-amber-300">
+                            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 dark:text-amber-350">
                               <span>📅 Date of Completion:</span>
                               <span>{completionDateStr}</span>
                             </div>

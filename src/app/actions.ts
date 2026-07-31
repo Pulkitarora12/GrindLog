@@ -163,7 +163,10 @@ export async function getSeries() {
           select: { daySummaries: true },
         },
       },
-      orderBy: { name: "asc" },
+      orderBy: [
+        { isEnded: "asc" },
+        { createdAt: "desc" },
+      ],
     });
   } catch (error) {
     console.error("Failed to fetch series:", error);
