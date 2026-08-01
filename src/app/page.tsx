@@ -50,7 +50,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   if (isAdmin && !isActiveDayClosed) {
     const [series, tracks] = await Promise.all([getSeries(), getTracks()]);
-    seriesList = series.map((s) => ({ id: s.id, name: s.name }));
+    seriesList = series.filter((s) => !s.isEnded).map((s) => ({ id: s.id, name: s.name }));
     subtopicsList = tracks.flatMap((t) =>
       t.subtopics
         .filter((s) => s.status !== "DONE")
