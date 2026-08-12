@@ -20,6 +20,9 @@ export async function getTracks() {
       include: {
         subtopics: {
           orderBy: { name: "asc" },
+          include: {
+            resources: { orderBy: { createdAt: "asc" } },
+          },
         },
       },
       orderBy: { name: "asc" },
@@ -148,6 +151,69 @@ export async function toggleSubtopicStatus(
   } catch (error) {
     console.error("Failed to update subtopic status:", error);
     throw new Error("Failed to update subtopic status");
+  }
+}
+
+export async function getResourcesForSubtopic(subtopicId: string) {
+  try {
+    return await prisma.subtopicResource.findMany({
+      where: { subtopicId },
+      orderBy: { createdAt: "asc" },
+    });
+  } catch (error) {
+    console.error("Failed to fetch resources:", error);
+    return [];
+  }
+}
+
+export async function createResource(
+  subtopicId: string,
+  label: string,
+  url: string,
+  type: "link" | "checklist" = "link"
+) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) {
+    throw new Error("Resource URL is required");
+  }
+
+  const normalizedUrl = /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
+  const trimmedLabel = label.trim() || normalizedUrl;
+
+  try {
+    const resource = await prisma.subtopicResource.create({
+      data: {
+        label: trimmedLabel,
+        url: normalizedUrl,
+        type,
+        subtopicId,
+      },
+    });
+    revalidatePath("/tracks");
+    return resource;
+  } catch (error) {
+    console.error("Failed to create resource:", error);
+    throw new Error("Failed to create resource");
+  }
+}
+
+export async function deleteResource(id: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    await prisma.subtopicResource.delete({
+      where: { id },
+    });
+    revalidatePath("/tracks");
+  } catch (error) {
+    console.error("Failed to delete resource:", error);
+    throw new Error("Failed to delete resource");
   }
 }
 

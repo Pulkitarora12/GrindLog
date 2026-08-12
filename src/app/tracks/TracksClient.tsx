@@ -7,14 +7,27 @@ import {
   createSubtopic,
   deleteSubtopic,
   toggleSubtopicStatus,
+  createResource,
+  deleteResource,
 } from "../actions";
 import { SubtopicStatus } from "@/lib/types";
+import ResourcesModal from "@/components/ResourcesModal";
+
+type ResourceType = "link" | "checklist";
+
+interface Resource {
+  id: string;
+  label: string;
+  url: string;
+  type: ResourceType;
+}
 
 interface Subtopic {
   id: string;
   name: string;
   status: SubtopicStatus;
   completedAt: Date | null;
+  resources: Resource[];
 }
 
 interface Track {
@@ -34,11 +47,16 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
   const [newSubtopicNames, setNewSubtopicNames] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [resourcesModalSubtopicId, setResourcesModalSubtopicId] = useState<string | null>(null);
 
   // Sync state if initialTracks updates from server
   React.useEffect(() => {
     setTracks(initialTracks);
   }, [initialTracks]);
+
+  const resourcesModalSubtopic = resourcesModalSubtopicId
+    ? tracks.flatMap((t) => t.subtopics).find((s) => s.id === resourcesModalSubtopicId) || null
+    : null;
 
   const handleCreateTrack = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +124,17 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
         setError(err.message || "Failed to update subtopic status");
       }
     });
+  };
+
+  const handleAddResource = async (label: string, url: string, type: ResourceType) => {
+    if (!resourcesModalSubtopicId) return;
+    setError(null);
+    await createResource(resourcesModalSubtopicId, label, url, type);
+  };
+
+  const handleDeleteResource = async (id: string) => {
+    setError(null);
+    await deleteResource(id);
   };
 
   return (
@@ -279,6 +308,15 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
                                   <option value={SubtopicStatus.DONE}>Completed</option>
                                 </select>
 
+                                {/* Resources & Checklists Button */}
+                                <button
+                                  onClick={() => setResourcesModalSubtopicId(subtopic.id)}
+                                  className="text-xs text-gray-400 dark:text-gray-500 hover:text-emerald-800 dark:hover:text-emerald-450 transition-colors cursor-pointer whitespace-nowrap"
+                                  title="Resources & Checklists"
+                                >
+                                  Resources{subtopic.resources.length > 0 ? ` (${subtopic.resources.length})` : ""}
+                                </button>
+
                                 {/* Delete Button */}
                                 {isAdmin && (
                                   <button
@@ -332,6 +370,16 @@ export default function TracksClient({ initialTracks, isAdmin = false }: TracksC
           </div>
         </div>
       )}
+
+      <ResourcesModal
+        isOpen={resourcesModalSubtopic !== null}
+        subtopicName={resourcesModalSubtopic?.name || ""}
+        resources={resourcesModalSubtopic?.resources || []}
+        isAdmin={isAdmin}
+        onClose={() => setResourcesModalSubtopicId(null)}
+        onAdd={handleAddResource}
+        onDelete={handleDeleteResource}
+      />
     </div>
   );
 }

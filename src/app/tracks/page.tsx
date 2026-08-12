@@ -19,6 +19,12 @@ export default async function TracksPage() {
       name: s.name,
       status: s.status as any,
       completedAt: s.completedAt,
+      resources: s.resources.map((r) => ({
+        id: r.id,
+        label: r.label,
+        url: r.url,
+        type: r.type as "link" | "checklist",
+      })),
     })),
   }));
 

@@ -34,10 +34,21 @@ model Subtopic {
   trackId     String
   track       Track          @relation(fields: [trackId], references: [id], onDelete: Cascade)
   targets     DailyTarget[]
+  resources   SubtopicResource[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   @@unique([trackId, name])
+}
+
+model SubtopicResource {
+  id         String   @id @default(cuid())
+  subtopicId String
+  label      String
+  url        String
+  type       String   @default("link")
+  createdAt  DateTime @default(now())
+  subtopic   Subtopic @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
 }
 
 model Series {
