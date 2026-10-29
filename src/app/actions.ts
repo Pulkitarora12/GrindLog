@@ -273,6 +273,38 @@ export async function deleteDayEntry(id: string) {
   }
 }
 
+/** Deletes every entry (and its photos) logged for a given day. */
+export async function deleteDayEntriesForDate(dateString: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    throw new Error("Invalid date format. Expected YYYY-MM-DD.");
+  }
+
+  try {
+    const date = new Date(dateString);
+    const entries = await prisma.dayEntry.findMany({
+      where: { date },
+      include: { images: true },
+    });
+    if (entries.length === 0) return;
+
+    await prisma.dayEntry.deleteMany({ where: { date } });
+    await destroyImages(entries.flatMap((e) => e.images.map((i) => i.publicId)));
+
+    revalidatePath("/");
+    revalidatePath("/series");
+    new Set(entries.map((e) => e.seriesId).filter(Boolean)).forEach((id) =>
+      revalidatePath(`/series/${id}`)
+    );
+  } catch (error) {
+    console.error("Failed to delete day entries:", error);
+    throw new Error("Failed to delete this day");
+  }
+}
+
 // ==========================================
 // ANALYTICS & STATS ACTIONS
 // ==========================================

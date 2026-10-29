@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import EntryList from "./EntryList";
-import { deleteDayEntry } from "@/app/actions";
+import { deleteDayEntry, deleteDayEntriesForDate } from "@/app/actions";
 import type { HeatmapData } from "@/lib/types";
 
 interface HeatmapProps {
@@ -195,6 +195,20 @@ export default function Heatmap({ data, isAdmin = false }: HeatmapProps) {
       router.refresh();
     } catch (err: any) {
       alert(err.message || "Failed to delete entry");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteDay = async (dateStr: string) => {
+    if (!confirm("Delete ALL entries and photos for this day?")) return;
+    setDeletingId("day");
+    try {
+      await deleteDayEntriesForDate(dateStr);
+      close();
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete this day");
     } finally {
       setDeletingId(null);
     }
@@ -431,11 +445,25 @@ export default function Heatmap({ data, isAdmin = false }: HeatmapProps) {
           </div>
 
           {activeDay ? (
-            <EntryList
-              entries={activeDay.entries}
-              onDelete={isAdmin ? handleDelete : undefined}
-              deletingId={deletingId}
-            />
+            <>
+              <EntryList
+                entries={activeDay.entries}
+                onDelete={isAdmin ? handleDelete : undefined}
+                deletingId={deletingId}
+              />
+              {isAdmin && (
+                <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteDay(active!.dateStr)}
+                    disabled={deletingId === "day"}
+                    className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer disabled:opacity-50"
+                  >
+                    {deletingId === "day" ? "Deleting…" : "Delete this whole day"}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-xs text-gray-400 dark:text-gray-500 italic font-serif">
               No entries for this day.
