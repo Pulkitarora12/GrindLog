@@ -15,9 +15,7 @@ export interface SeriesItem {
   endedAt: Date | string | null;
   endingReason: string | null;
   createdAt: Date | string;
-  _count: {
-    daySummaries: number;
-  };
+  daysLogged: number;
 }
 
 interface SeriesClientProps {
@@ -268,7 +266,7 @@ export default function SeriesClient({ initialSeries, isAdmin = false }: SeriesC
                         </div>
 
                         <p className="text-gray-400 dark:text-gray-500 font-medium">
-                          📊 {item._count.daySummaries} day{item._count.daySummaries !== 1 ? "s" : ""} logged
+                          📊 {item.daysLogged} day{item.daysLogged !== 1 ? "s" : ""} logged
                         </p>
                       </div>
 

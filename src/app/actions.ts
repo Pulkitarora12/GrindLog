@@ -2,220 +2,13 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { SubtopicStatus } from "@prisma/client";
 import { isAuthorized } from "@/lib/auth";
 import {
   getTodayDateString,
-  getYesterdayDateString,
   isDateAllowedForLogging,
 } from "@/lib/dateUtils";
-
-// ==========================================
-// TRACKS & SUBTOPICS ACTIONS
-// ==========================================
-
-export async function getTracks() {
-  try {
-    return await prisma.track.findMany({
-      include: {
-        subtopics: {
-          orderBy: { name: "asc" },
-          include: {
-            resources: { orderBy: { createdAt: "asc" } },
-          },
-        },
-      },
-      orderBy: { name: "asc" },
-    });
-  } catch (error) {
-    console.error("Failed to fetch tracks:", error);
-    return [];
-  }
-}
-
-export async function createTrack(name: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  if (!name || name.trim() === "") {
-    throw new Error("Track name is required");
-  }
-
-  try {
-    const track = await prisma.track.create({
-      data: { name: name.trim() },
-    });
-    revalidatePath("/tracks");
-    revalidatePath("/");
-    return track;
-  } catch (error: any) {
-    if (error.code === "P2002") {
-      throw new Error("A track with this name already exists");
-    }
-    throw new Error("Failed to create track");
-  }
-}
-
-export async function deleteTrack(id: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  try {
-    await prisma.track.delete({
-      where: { id },
-    });
-    revalidatePath("/tracks");
-    revalidatePath("/");
-    revalidatePath("/feed");
-    revalidatePath("/calendar");
-  } catch (error) {
-    console.error("Failed to delete track:", error);
-    throw new Error("Failed to delete track");
-  }
-}
-
-export async function createSubtopic(trackId: string, name: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  if (!name || name.trim() === "") {
-    throw new Error("Subtopic name is required");
-  }
-
-  try {
-    const subtopic = await prisma.subtopic.create({
-      data: {
-        name: name.trim(),
-        trackId,
-        status: SubtopicStatus.NOT_STARTED,
-      },
-    });
-    revalidatePath("/tracks");
-    revalidatePath("/");
-    return subtopic;
-  } catch (error: any) {
-    if (error.code === "P2002") {
-      throw new Error("This subtopic already exists in this track");
-    }
-    throw new Error("Failed to create subtopic");
-  }
-}
-
-export async function deleteSubtopic(id: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  try {
-    await prisma.subtopic.delete({
-      where: { id },
-    });
-    revalidatePath("/tracks");
-    revalidatePath("/");
-    revalidatePath("/feed");
-    revalidatePath("/calendar");
-  } catch (error) {
-    console.error("Failed to delete subtopic:", error);
-    throw new Error("Failed to delete subtopic");
-  }
-}
-
-export async function toggleSubtopicStatus(
-  id: string,
-  status: SubtopicStatus,
-  completedAtDate: Date | null = null
-) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  try {
-    const completedAt = status === SubtopicStatus.DONE ? (completedAtDate || new Date()) : null;
-
-    const subtopic = await prisma.subtopic.update({
-      where: { id },
-      data: {
-        status,
-        completedAt,
-      },
-    });
-
-    revalidatePath("/tracks");
-    revalidatePath("/");
-    revalidatePath("/feed");
-    revalidatePath("/calendar");
-    return subtopic;
-  } catch (error) {
-    console.error("Failed to update subtopic status:", error);
-    throw new Error("Failed to update subtopic status");
-  }
-}
-
-export async function getResourcesForSubtopic(subtopicId: string) {
-  try {
-    return await prisma.subtopicResource.findMany({
-      where: { subtopicId },
-      orderBy: { createdAt: "asc" },
-    });
-  } catch (error) {
-    console.error("Failed to fetch resources:", error);
-    return [];
-  }
-}
-
-export async function createResource(
-  subtopicId: string,
-  label: string,
-  url: string,
-  type: "link" | "checklist" = "link"
-) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  const trimmedUrl = url.trim();
-  if (!trimmedUrl) {
-    throw new Error("Resource URL is required");
-  }
-
-  const normalizedUrl = /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
-  const trimmedLabel = label.trim() || normalizedUrl;
-
-  try {
-    const resource = await prisma.subtopicResource.create({
-      data: {
-        label: trimmedLabel,
-        url: normalizedUrl,
-        type,
-        subtopicId,
-      },
-    });
-    revalidatePath("/tracks");
-    return resource;
-  } catch (error) {
-    console.error("Failed to create resource:", error);
-    throw new Error("Failed to create resource");
-  }
-}
-
-export async function deleteResource(id: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  try {
-    await prisma.subtopicResource.delete({
-      where: { id },
-    });
-    revalidatePath("/tracks");
-  } catch (error) {
-    console.error("Failed to delete resource:", error);
-    throw new Error("Failed to delete resource");
-  }
-}
+import { createUploadSignature, destroyImages } from "@/lib/cloudinary";
+import type { HeatmapData, NewEntryInput } from "@/lib/types";
 
 // ==========================================
 // SERIES ACTIONS
@@ -223,30 +16,33 @@ export async function deleteResource(id: string) {
 
 export async function getSeries() {
   try {
-    return await prisma.series.findMany({
+    const rows = await prisma.series.findMany({
       include: {
-        _count: {
-          select: { daySummaries: true },
-        },
+        entries: { select: { date: true } },
       },
       orderBy: [
         { isEnded: "asc" },
         { createdAt: "desc" },
       ],
     });
+    return rows.map(({ entries, ...rest }) => ({
+      ...rest,
+      daysLogged: new Set(entries.map((e) => e.date.getTime())).size,
+    }));
   } catch (error) {
     console.error("Failed to fetch series:", error);
     return [];
   }
 }
 
-export async function getSeriesWithSummaries(id: string) {
+export async function getSeriesWithEntries(id: string) {
   try {
     return await prisma.series.findUnique({
       where: { id },
       include: {
-        daySummaries: {
-          orderBy: { date: "asc" },
+        entries: {
+          orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+          include: { images: { orderBy: { createdAt: "asc" } } },
         },
       },
     });
@@ -293,8 +89,6 @@ export async function deleteSeries(id: string) {
     });
     revalidatePath("/series");
     revalidatePath("/");
-    revalidatePath("/feed");
-    revalidatePath("/calendar");
   } catch (error) {
     console.error("Failed to delete series:", error);
     throw new Error("Failed to delete series");
@@ -322,8 +116,6 @@ export async function endSeries(id: string, endingReason: string) {
     revalidatePath("/series");
     revalidatePath(`/series/${id}`);
     revalidatePath("/");
-    revalidatePath("/feed");
-    revalidatePath("/calendar");
     return series;
   } catch (error: any) {
     console.error("Failed to end series:", error);
@@ -348,8 +140,6 @@ export async function reopenSeries(id: string) {
     revalidatePath("/series");
     revalidatePath(`/series/${id}`);
     revalidatePath("/");
-    revalidatePath("/feed");
-    revalidatePath("/calendar");
     return series;
   } catch (error) {
     console.error("Failed to reopen series:", error);
@@ -377,8 +167,6 @@ export async function updateSeries(id: string, name: string, description?: strin
     revalidatePath("/series");
     revalidatePath(`/series/${id}`);
     revalidatePath("/");
-    revalidatePath("/feed");
-    revalidatePath("/calendar");
     return series;
   } catch (error: any) {
     if (error.code === "P2002") {
@@ -389,339 +177,99 @@ export async function updateSeries(id: string, name: string, description?: strin
 }
 
 // ==========================================
-// DATE HELPERS IMPORTED FROM UTILS
+// DAY ENTRIES ACTIONS
 // ==========================================
 
-
-// ==========================================
-// DAILY TARGETS ACTIONS
-// ==========================================
-
-export async function getDailyTargets(dateString: string) {
-  try {
-    const date = new Date(dateString);
-    return await prisma.dailyTarget.findMany({
-      where: { date },
-      include: {
-        subtopic: {
-          include: { track: true }
-        }
-      },
-      orderBy: { createdAt: "asc" }
-    });
-  } catch (error) {
-    console.error("Failed to fetch daily targets:", error);
-    return [];
+export async function getUploadSignature() {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
   }
+  return createUploadSignature();
 }
 
-export async function createDailyTarget(
-  text: string,
-  subtopicId?: string | null,
-  dateString?: string
-) {
+export async function createDayEntries(dateString: string, entries: NewEntryInput[]) {
   if (!await isAuthorized()) {
     throw new Error("Unauthorized");
   }
 
-  const todayStr = getTodayDateString();
-  const targetDateStr = dateString || todayStr;
-
-  if (!isDateAllowedForLogging(targetDateStr)) {
-    throw new Error("Cannot log targets for dates other than today or yesterday.");
-  }
-
-  const targetDate = new Date(targetDateStr);
-
-  // Check if today is closed
-  const summary = await prisma.daySummary.findUnique({
-    where: { date: targetDate }
-  });
-
-  if (summary?.isClosed) {
-    throw new Error("Cannot add targets to a closed day.");
-  }
-
-  try {
-    const target = await prisma.dailyTarget.create({
-      data: {
-        text: text.trim(),
-        date: targetDate,
-        subtopicId: subtopicId || null,
-      },
-      include: {
-        subtopic: {
-          include: { track: true }
-        }
-      }
-    });
-
-    revalidatePath("/");
-    revalidatePath("/calendar");
-    return target;
-  } catch (error) {
-    console.error("Failed to create daily target:", error);
-    throw new Error("Failed to create daily target");
-  }
-}
-
-export async function toggleDailyTarget(id: string, done: boolean) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  try {
-    const target = await prisma.dailyTarget.findUnique({
-      where: { id }
-    });
-
-    if (!target) {
-      throw new Error("Target not found");
-    }
-
-    // Check if date is closed
-    const summary = await prisma.daySummary.findUnique({
-      where: { date: target.date }
-    });
-
-    if (summary?.isClosed) {
-      throw new Error("Cannot edit targets on a closed day.");
-    }
-
-    const updated = await prisma.dailyTarget.update({
-      where: { id },
-      data: { done },
-    });
-
-    revalidatePath("/");
-    revalidatePath("/calendar");
-    return updated;
-  } catch (error: any) {
-    console.error("Failed to toggle daily target:", error);
-    throw new Error(error.message || "Failed to toggle daily target");
-  }
-}
-
-export async function deleteDailyTarget(id: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  try {
-    const target = await prisma.dailyTarget.findUnique({
-      where: { id }
-    });
-
-    if (!target) {
-      throw new Error("Target not found");
-    }
-
-    // Check if date is closed
-    const summary = await prisma.daySummary.findUnique({
-      where: { date: target.date }
-    });
-
-    if (summary?.isClosed) {
-      throw new Error("Cannot delete targets on a closed day.");
-    }
-
-    await prisma.dailyTarget.delete({
-      where: { id }
-    });
-
-    revalidatePath("/");
-    revalidatePath("/calendar");
-  } catch (error: any) {
-    console.error("Failed to delete daily target:", error);
-    throw new Error(error.message || "Failed to delete daily target");
-  }
-}
-
-// ==========================================
-// DAY SUMMARY ACTIONS
-// ==========================================
-
-export async function endDay(dateString: string, seriesId?: string | null) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  // Validate date format
-  if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    throw new Error("Invalid date format. Expected YYYY-MM-DD.");
-  }
-
-  // Only allow today or yesterday
   if (!isDateAllowedForLogging(dateString)) {
-    throw new Error("You can only close a day for today or yesterday.");
+    throw new Error("You can only log entries for today or yesterday.");
   }
 
-  const targetDate = new Date(dateString);
+  const cleaned = entries
+    .map((e) => ({ ...e, text: e.text.trim() }))
+    .filter((e) => e.text !== "");
 
-  // Check if already closed
-  const existingSummary = await prisma.daySummary.findUnique({
-    where: { date: targetDate }
-  });
-
-  if (existingSummary?.isClosed) {
-    throw new Error("Day is already closed.");
+  if (cleaned.length === 0) {
+    throw new Error("Add at least one entry describing what you did.");
   }
 
-  try {
-    // Fetch targets for the selected date
-    const targets = await prisma.dailyTarget.findMany({
-      where: { date: targetDate }
+  const seriesIds = Array.from(
+    new Set(cleaned.map((e) => e.seriesId).filter((id): id is string => !!id))
+  );
+  if (seriesIds.length > 0) {
+    const valid = await prisma.series.findMany({
+      where: { id: { in: seriesIds }, isEnded: false },
+      select: { id: true },
     });
-
-    if (targets.length === 0) {
-      throw new Error("Cannot close a day with no targets. Please set at least one target.");
+    if (valid.length !== seriesIds.length) {
+      throw new Error("One of the selected series is no longer active.");
     }
-
-    const targetsSetCount = targets.length;
-    const targetsAchievedCount = targets.filter(t => t.done).length;
-    const efficiency = (targetsAchievedCount / targetsSetCount) * 100;
-
-    // Create or update DaySummary to isClosed = true
-    const summary = await prisma.daySummary.upsert({
-      where: { date: targetDate },
-      update: {
-        seriesId: seriesId || null,
-        targetsSetCount,
-        targetsAchievedCount,
-        efficiency,
-        isClosed: true,
-      },
-      create: {
-        date: targetDate,
-        seriesId: seriesId || null,
-        targetsSetCount,
-        targetsAchievedCount,
-        efficiency,
-        isClosed: true,
-      }
-    });
-
-    revalidatePath("/");
-    revalidatePath("/calendar");
-    revalidatePath("/feed");
-    revalidatePath("/series");
-    if (seriesId) {
-      revalidatePath(`/series/${seriesId}`);
-    }
-
-    return summary;
-  } catch (error: any) {
-    console.error("Failed to end day:", error);
-    throw new Error(error.message || "Failed to end day");
-  }
-}
-
-// ==========================================
-// DELETE / REOPEN DAY ACTIONS
-// ==========================================
-
-/**
- * Permanently deletes the DaySummary AND all DailyTargets for a given date.
- * Use when you want to wipe everything for a day and start fresh.
- */
-export async function deleteDayData(dateString: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
   }
 
   const date = new Date(dateString);
-
-  // Delete targets first (no FK cascade from DaySummary → DailyTarget)
-  await prisma.dailyTarget.deleteMany({ where: { date } });
-
-  // Delete the summary
-  await prisma.daySummary.deleteMany({ where: { date } });
-
-  revalidatePath("/");
-  revalidatePath("/calendar");
-  revalidatePath("/feed");
-  revalidatePath("/series");
-}
-
-/**
- * Unlocks a closed day by deleting only the DaySummary (keeps the targets).
- * This lets the admin re-edit targets and re-close the day.
- */
-export async function reopenDay(dateString: string) {
-  if (!await isAuthorized()) {
-    throw new Error("Unauthorized");
-  }
-
-  const date = new Date(dateString);
+  const base = Date.now();
 
   try {
-    await prisma.daySummary.delete({
-      where: { date }
-    });
-
-    revalidatePath("/");
-    revalidatePath("/calendar");
-    revalidatePath("/feed");
-    revalidatePath("/series");
-  } catch (error) {
-    console.error("Failed to reopen day:", error);
-    throw new Error("Failed to reopen day");
-  }
-}
-
-export async function getDaySummaryWithTargets(dateString: string) {
-  try {
-    const date = new Date(dateString);
-    const summary = await prisma.daySummary.findUnique({
-      where: { date },
-      include: { series: true }
-    });
-
-    const targets = await prisma.dailyTarget.findMany({
-      where: { date },
-      include: {
-        subtopic: {
-          include: { track: true }
-        }
-      },
-      orderBy: { createdAt: "asc" }
-    });
-
-    return { summary, targets };
-  } catch (error) {
-    console.error("Failed to fetch day summary with targets:", error);
-    return null;
-  }
-}
-
-export async function getClosedDaySummaries(filters?: { seriesId?: string; trackId?: string }) {
-  try {
-    const where: any = { isClosed: true };
-    if (filters?.seriesId) {
-      where.seriesId = filters.seriesId;
-    }
-    if (filters?.trackId) {
-      const targets = await prisma.dailyTarget.findMany({
-        where: {
-          subtopic: {
-            trackId: filters.trackId,
+    await prisma.$transaction(
+      cleaned.map((e, i) =>
+        prisma.dayEntry.create({
+          data: {
+            date,
+            text: e.text,
+            seriesId: e.seriesId || null,
+            // Explicit timestamps keep the entries in the order they were written
+            createdAt: new Date(base + i),
+            images: {
+              create: e.images.map((img) => ({ url: img.url, publicId: img.publicId })),
+            },
           },
-        },
-        select: { date: true },
-      });
-      const dates = targets.map((t) => t.date);
-      where.date = { in: dates };
-    }
-    return await prisma.daySummary.findMany({
-      where,
-      include: {
-        series: true,
-      },
-      orderBy: { date: "desc" },
-    });
+        })
+      )
+    );
+
+    revalidatePath("/");
+    revalidatePath("/series");
+    seriesIds.forEach((id) => revalidatePath(`/series/${id}`));
   } catch (error) {
-    console.error("Failed to fetch closed day summaries:", error);
-    return [];
+    console.error("Failed to create day entries:", error);
+    throw new Error("Failed to save your entries");
+  }
+}
+
+export async function deleteDayEntry(id: string) {
+  if (!await isAuthorized()) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const entry = await prisma.dayEntry.findUnique({
+      where: { id },
+      include: { images: true },
+    });
+    if (!entry) return;
+
+    await prisma.dayEntry.delete({ where: { id } });
+    await destroyImages(entry.images.map((i) => i.publicId));
+
+    revalidatePath("/");
+    revalidatePath("/series");
+    if (entry.seriesId) {
+      revalidatePath(`/series/${entry.seriesId}`);
+    }
+  } catch (error) {
+    console.error("Failed to delete entry:", error);
+    throw new Error("Failed to delete entry");
   }
 }
 
@@ -729,121 +277,49 @@ export async function getClosedDaySummaries(filters?: { seriesId?: string; track
 // ANALYTICS & STATS ACTIONS
 // ==========================================
 
+const toDateKey = (d: Date) => d.toISOString().slice(0, 10);
+
 export async function getDashboardStats() {
   try {
-    // Fetch all closed summaries for streak calculation
-    const summaries = await prisma.daySummary.findMany({
-      where: { isClosed: true },
-      select: { date: true },
-      orderBy: { date: "desc" },
-    });
-
-    const dates = summaries.map((s) => s.date);
-    const streak = calculateStreak(dates);
-
-    // Tracks statistics (remain unchanged)
-    const tracks = await prisma.track.findMany({
-      include: {
-        subtopics: true,
-      },
-    });
-
-    let totalSubtopics = 0;
-    let completedSubtopics = 0;
-
-    const trackSummaries = tracks.map((t) => {
-      const total = t.subtopics.length;
-      const completed = t.subtopics.filter(
-        (s) => s.status === SubtopicStatus.DONE
-      ).length;
-
-      totalSubtopics += total;
-      completedSubtopics += completed;
-
-      return {
-        id: t.id,
-        name: t.name,
-        total,
-        completed,
-        percentage: total > 0 ? Math.round((completed / total) * 100) : 0,
-      };
-    });
-
-    // Recent closed summaries
-    const recentSummaries = await prisma.daySummary.findMany({
-      take: 5,
-      where: { isClosed: true },
-      include: {
-        series: true,
-      },
-      orderBy: { date: "desc" },
-    });
+    const rows = await prisma.dayEntry.findMany({ select: { date: true } });
+    const dateKeys = Array.from(new Set(rows.map((r) => toDateKey(r.date))));
 
     return {
-      streak,
-      totalClosedDays: summaries.length,
-      overallProgress: {
-        total: totalSubtopics,
-        completed: completedSubtopics,
-        percentage:
-          totalSubtopics > 0
-            ? Math.round((completedSubtopics / totalSubtopics) * 100)
-            : 0,
-      },
-      trackSummaries,
-      recentSummaries,
+      streak: calculateStreak(dateKeys),
+      totalDays: dateKeys.length,
+      totalEntries: rows.length,
     };
   } catch (error) {
     console.error("Failed to calculate dashboard stats:", error);
-    return {
-      streak: 0,
-      totalClosedDays: 0,
-      overallProgress: { total: 0, completed: 0, percentage: 0 },
-      trackSummaries: [],
-      recentSummaries: [],
-    };
+    return { streak: 0, totalDays: 0, totalEntries: 0 };
   }
 }
 
-export async function getHeatmapData() {
+export async function getHeatmapData(): Promise<HeatmapData> {
   try {
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    oneYearAgo.setHours(0, 0, 0, 0);
-
-    const summaries = await prisma.daySummary.findMany({
-      where: {
-        date: {
-          gte: oneYearAgo,
-        },
-        isClosed: true,
+    const entries = await prisma.dayEntry.findMany({
+      include: {
+        series: { select: { name: true } },
+        images: { orderBy: { createdAt: "asc" } },
       },
-      select: { date: true, efficiency: true },
+      orderBy: { createdAt: "asc" },
     });
 
-    // Format as { [dateString]: { count: number, efficiency: number } }
-    const heatmap: Record<string, { count: number; efficiency: number }> = {};
-
-    summaries.forEach((s) => {
-      const dateObj = new Date(s.date);
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const day = String(dateObj.getDate()).padStart(2, "0");
-      const dateStr = `${year}-${month}-${day}`;
-
-      // Map efficiency to a count of 1-4 for intensity
-      let count = 0;
-      if (s.efficiency === 0) count = 0;
-      else if (s.efficiency <= 25) count = 1;
-      else if (s.efficiency <= 50) count = 2;
-      else if (s.efficiency <= 75) count = 3;
-      else count = 4;
-
-      heatmap[dateStr] = {
-        count,
-        efficiency: Math.round(s.efficiency),
-      };
-    });
+    const heatmap: HeatmapData = {};
+    for (const e of entries) {
+      const key = toDateKey(e.date);
+      if (!heatmap[key]) heatmap[key] = { count: 0, entries: [] };
+      heatmap[key].entries.push({
+        id: e.id,
+        text: e.text,
+        seriesName: e.series?.name ?? null,
+        images: e.images.map((i) => ({ id: i.id, url: i.url })),
+      });
+    }
+    // Heat level 1-4 based on how many entries were logged that day
+    for (const day of Object.values(heatmap)) {
+      day.count = Math.min(day.entries.length, 4);
+    }
 
     return heatmap;
   } catch (error) {
@@ -856,62 +332,23 @@ export async function getHeatmapData() {
 // HELPERS
 // ==========================================
 
-function calculateStreak(dates: Date[]): number {
-  if (dates.length === 0) return 0;
+/** Consecutive days (ending today or yesterday) that have at least one entry. */
+function calculateStreak(dateKeys: string[]): number {
+  if (dateKeys.length === 0) return 0;
 
-  // Normalize to YYYY-MM-DD local date strings and get unique dates
-  const uniqueDateStrings = Array.from(
-    new Set(
-      dates.map((d) => {
-        const dateObj = new Date(d);
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const day = String(dateObj.getDate()).padStart(2, "0");
-        return `${year}-${month}-${day}`;
-      })
-    )
-  ).sort((a, b) => b.localeCompare(a)); // Sort descending (latest first)
+  const days = new Set(dateKeys);
+  const [y, m, d] = getTodayDateString().split("-").map(Number);
+  const cursor = new Date(Date.UTC(y, m - 1, d));
 
-  if (uniqueDateStrings.length === 0) return 0;
-
-  // Helper to get local date string
-  const getLocalDateString = (d: Date) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
-  // Check against client's timezone today (IST)
-  const todayStr = getTodayDateString();
-  const yesterday = new Date();
-  // Simple subtraction in IST context:
-  const yesterdayObj = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
-  const options = { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" } as const;
-  const formatter = new Intl.DateTimeFormat("en-CA", options);
-  const yesterdayStr = formatter.format(yesterdayObj);
-
-  const latestDateStr = uniqueDateStrings[0];
-
-  // If the latest entry is neither today nor yesterday, streak is broken
-  if (latestDateStr !== todayStr && latestDateStr !== yesterdayStr) {
-    return 0;
+  // Today without an entry yet doesn't break the streak
+  if (!days.has(toDateKey(cursor))) {
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
 
   let streak = 0;
-  // Starting date is the latest date in the database
-  let currentDate = new Date(latestDateStr);
-
-  for (let i = 0; i < uniqueDateStrings.length; i++) {
-    const expectedStr = formatter.format(currentDate);
-    if (uniqueDateStrings[i] === expectedStr) {
-      streak++;
-      // Decrement by 1 day for the next check
-      currentDate.setDate(currentDate.getDate() - 1);
-    } else {
-      break; // Streak is broken
-    }
+  while (days.has(toDateKey(cursor))) {
+    streak++;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
-
   return streak;
 }

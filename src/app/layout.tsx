@@ -63,10 +63,10 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground font-sans transition-colors duration-300">
+      <body className="h-dvh overflow-hidden flex flex-col bg-background text-foreground font-sans transition-colors duration-300">
         {/* Navigation Header */}
         <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 transition-colors duration-300">
-          <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
+          <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="font-serif text-2xl font-bold tracking-tight hover:opacity-80">
               GrindLog<span className="text-emerald-700 dark:text-emerald-500">.</span>
@@ -77,15 +77,6 @@ export default async function RootLayout({
               <nav className="flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-300">
                 <Link href="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Dashboard
-                </Link>
-                <Link href="/feed" className="hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Feed
-                </Link>
-                <Link href="/calendar" className="hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Calendar
-                </Link>
-                <Link href="/tracks" className="hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Tracks
                 </Link>
                 <Link href="/series" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   Series
@@ -136,29 +127,31 @@ export default async function RootLayout({
 
                 {/* Theme Toggle Button */}
                 <DarkModeToggle />
+
+                {isAdmin && (
+                  <>
+                    <div className="h-4 w-px bg-gray-200 dark:bg-gray-800" />
+                    <form action={handleLogout}>
+                      <button
+                        type="submit"
+                        className="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                      >
+                        Logout
+                      </button>
+                    </form>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </header>
 
         {/* Main Content Wrapper */}
-        <main className="flex-1 mx-auto w-full max-w-5xl px-6 py-8">
+        <main className="flex-1 min-h-0 overflow-y-auto">
+          <div className="mx-auto w-full max-w-7xl px-6 py-6">
           {children}
-        </main>
-
-        {/* Footer */}
-        <footer className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 py-6 text-center text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
-          <div className="mx-auto max-w-5xl px-6 flex items-center justify-center gap-4">
-            <span>&copy; {new Date().getFullYear()} GrindLog. Built with Next.js, Prisma, and Vercel.</span>
-            {isAdmin && (
-              <form action={handleLogout} className="inline">
-                <button type="submit" className="text-xs text-red-600 dark:text-red-400 hover:underline cursor-pointer">
-                  Logout Admin
-                </button>
-              </form>
-            )}
           </div>
-        </footer>
+        </main>
       </body>
     </html>
   );

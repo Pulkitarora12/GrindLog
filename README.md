@@ -48,6 +48,11 @@ DATABASE_URL_UNPOOLED="postgres://..."
 # Security and Credentials
 ADMIN_PASSWORD="your-admin-password"
 SESSION_SECRET="your-jwt-session-secret"
+
+# Cloudinary (proof-of-work photos)
+CLOUDINARY_CLOUD_NAME="..."
+CLOUDINARY_API_KEY="..."
+CLOUDINARY_API_SECRET="..."
 ```
 
 ### 3. Database Push
@@ -72,19 +77,16 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 
 ```
 ├── prisma/
-│   ├── schema.prisma   # Database schema (Track, Subtopic, Series, DailyTarget, DaySummary)
+│   ├── schema.prisma   # Database schema (Series, DayEntry, EntryImage)
 ├── src/
 │   ├── app/
 │   │   ├── actions.ts  # Database-safe server actions
 │   │   ├── layout.tsx  # Global layout and social nav links
-│   │   ├── page.tsx    # Dashboard, stats, heatmap, and daily targets list
-│   │   ├── calendar/   # Interactive monthly calendar view with target lists
-│   │   ├── feed/       # Searchable logs / summaries feed
+│   │   ├── page.tsx    # Dashboard: stats, "Log your day" popup, heatmap with day popups
 │   │   ├── login/      # Secure password authentication
 │   │   ├── series/     # Trackable challenges & timelines (e.g. 100 Days of Code)
-│   │   ├── tracks/     # Tracks & subtopics checklist manager
 │   │   └── globals.css # App styling imports and Tailwind configuration
-│   ├── components/     # Reusable components (Heatmap, MonthlyCalendar)
+│   ├── components/     # Reusable components (Heatmap, LogDayModal, EntryList)
 │   └── lib/
 │       ├── auth.ts     # Session token and auth guards
 │       ├── links.ts    # Central social links configuration

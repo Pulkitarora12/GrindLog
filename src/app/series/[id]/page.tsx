@@ -1,8 +1,9 @@
-import { getSeriesWithSummaries } from "../../actions";
+import { getSeriesWithEntries } from "../../actions";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { isAuthorized } from "@/lib/auth";
 import SeriesDetailHeader from "./SeriesDetailHeader";
+import EntryList from "@/components/EntryList";
+import type { DayEntryView } from "@/lib/types";
 
 interface SeriesDetailPageProps {
   params: Promise<{
@@ -15,7 +16,7 @@ export const revalidate = 0; // Disable static cache to reflect instant database
 export default async function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const { id } = await params;
   const [series, isAdmin] = await Promise.all([
-    getSeriesWithSummaries(id),
+    getSeriesWithEntries(id),
     isAuthorized(),
   ]);
 
@@ -23,73 +24,60 @@ export default async function SeriesDetailPage({ params }: SeriesDetailPageProps
     notFound();
   }
 
+  // Group entries by day (already ordered oldest first)
+  const days: { dateKey: string; label: string; entries: DayEntryView[] }[] = [];
+  for (const entry of series.entries) {
+    const dateKey = entry.date.toISOString().slice(0, 10);
+    let day = days[days.length - 1];
+    if (!day || day.dateKey !== dateKey) {
+      day = {
+        dateKey,
+        label: entry.date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          timeZone: "UTC",
+        }),
+        entries: [],
+      };
+      days.push(day);
+    }
+    day.entries.push({
+      id: entry.id,
+      text: entry.text,
+      seriesName: null,
+      images: entry.images.map((i) => ({ id: i.id, url: i.url })),
+    });
+  }
+
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
       {/* Series Metadata Header & Controls */}
       <SeriesDetailHeader series={series} isAdmin={isAdmin} />
 
-      {/* Sequential Day Summaries Timeline */}
-      {series.daySummaries.length === 0 ? (
+      {/* Sequential Day Entries Timeline */}
+      {days.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-gray-200 dark:border-gray-800 rounded-sm text-gray-400 dark:text-gray-500">
-          No days have been logged in this series yet. Close your first day from the dashboard to add to this series!
+          No days have been logged in this series yet. Use &quot;Log your day&quot; on the dashboard to add to this series!
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {series.daySummaries.map((summary, index) => {
-            const summaryDateStr = new Date(summary.date).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            });
-            const dateQueryStr = new Date(summary.date).toISOString().split("T")[0];
-
-            return (
-              <div
-                key={summary.id}
-                className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 rounded-sm flex flex-col justify-between hover:border-emerald-700 dark:hover:border-emerald-500 transition-all duration-300"
-              >
-                <div>
-                  <div className="flex justify-between items-baseline mb-2">
-                    <span className="font-serif italic font-bold text-emerald-800 dark:text-emerald-450 text-sm">
-                      Day {index + 1}
-                    </span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                      {summaryDateStr}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="bg-gray-50 dark:bg-slate-800/40 p-2.5 rounded-sm border border-gray-100 dark:border-gray-800">
-                      <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 block font-semibold">
-                        Efficiency
-                      </span>
-                      <span className="text-xl font-serif font-bold text-emerald-800 dark:text-emerald-450 block mt-0.5">
-                        {Math.round(summary.efficiency)}%
-                      </span>
-                    </div>
-
-                    <div className="bg-gray-50 dark:bg-slate-800/40 p-2.5 rounded-sm border border-gray-100 dark:border-gray-800">
-                      <span className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 block font-semibold">
-                        Targets Set
-                      </span>
-                      <span className="text-xl font-serif font-bold text-gray-800 dark:text-gray-200 block mt-0.5">
-                        {summary.targetsAchievedCount} / {summary.targetsSetCount}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 pt-3 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-xs">
-                  <Link
-                    href={`/calendar?date=${dateQueryStr}`}
-                    className="font-semibold text-emerald-800 dark:text-emerald-455 hover:underline flex items-center gap-1"
-                  >
-                    View Targets Details &rarr;
-                  </Link>
-                </div>
+          {days.map((day, index) => (
+            <div
+              key={day.dateKey}
+              className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5 rounded-sm hover:border-emerald-700 dark:hover:border-emerald-500 transition-all duration-300"
+            >
+              <div className="flex justify-between items-baseline mb-3 pb-2 border-b border-gray-100 dark:border-gray-800">
+                <span className="font-serif italic font-bold text-emerald-800 dark:text-emerald-450 text-sm">
+                  Day {index + 1}
+                </span>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                  {day.label}
+                </span>
               </div>
-            );
-          })}
+              <EntryList entries={day.entries} />
+            </div>
+          ))}
         </div>
       )}
     </div>

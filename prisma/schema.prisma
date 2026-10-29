@@ -12,77 +12,37 @@ datasource db {
   provider = "postgresql"
 }
 
-model Track {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  subtopics   Subtopic[]
-}
-
-enum SubtopicStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  DONE
-}
-
-model Subtopic {
-  id          String         @id @default(cuid())
-  name        String
-  status      SubtopicStatus @default(NOT_STARTED)
-  completedAt DateTime?
-  trackId     String
-  track       Track          @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  targets     DailyTarget[]
-  resources   SubtopicResource[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  @@unique([trackId, name])
-}
-
-model SubtopicResource {
-  id         String   @id @default(cuid())
-  subtopicId String
-  label      String
-  url        String
-  type       String   @default("link")
-  createdAt  DateTime @default(now())
-  subtopic   Subtopic @relation(fields: [subtopicId], references: [id], onDelete: Cascade)
-}
-
 model Series {
-  id           String       @id @default(cuid())
-  name         String       @unique
+  id           String     @id @default(cuid())
+  name         String     @unique
   description  String?
-  isEnded      Boolean      @default(false)
+  isEnded      Boolean    @default(false)
   endedAt      DateTime?
   endingReason String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  daySummaries DaySummary[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  entries      DayEntry[]
 }
 
-model DailyTarget {
-  id         String    @id @default(cuid())
-  text       String
-  done       Boolean   @default(false)
-  date       DateTime
-  subtopicId String?
-  subtopic   Subtopic? @relation(fields: [subtopicId], references: [id], onDelete: SetNull)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+// One "what I did" entry. A day can have as many entries as needed.
+model DayEntry {
+  id        String       @id @default(cuid())
+  date      DateTime
+  text      String
+  seriesId  String?
+  series    Series?      @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  images    EntryImage[]
+  createdAt DateTime     @default(now())
+
+  @@index([date])
 }
 
-model DaySummary {
-  id                   String   @id @default(cuid())
-  date                 DateTime @unique
-  seriesId             String?
-  series               Series?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-  targetsSetCount      Int
-  targetsAchievedCount Int
-  efficiency           Float
-  isClosed             Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+// Proof-of-work photo stored on Cloudinary.
+model EntryImage {
+  id        String   @id @default(cuid())
+  entryId   String
+  entry     DayEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  url       String
+  publicId  String
+  createdAt DateTime @default(now())
 }
