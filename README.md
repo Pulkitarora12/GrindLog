@@ -1,19 +1,16 @@
 # GrindLog
 
-**GrindLog** is a premium, typography-first personal productivity and placement preparation tracking dashboard. Designed with a clean, editorial look, it empowers users to define daily targets, link them to specific learning subtopics, track consistency, and generate automated end-of-day summaries.
-
----
+**GrindLog** is a typography-first personal growth journal. Designed with a clean, editorial look, it lets you log what you did each day (with photo proof), then see your consistency at a glance on a yearly heatmap.
 
 ## ✨ Features
 
-- **Automated Target Tracking & End-Day Summaries**: Replace manual journal/blog writing with structured daily target checklists. Define target items and link them optionally to specific learning subtopics.
-- **Interactive Consistency Heatmap**: A GitHub-style 365-day heat grid rendering daily activity levels based on target completion efficiency (0% to 100%) on closed days.
-- **Efficiency Metrics & Day Locking**: Ending a day calculates the overall completion efficiency percentage. Once a day is closed, its targets and status are locked.
-- **Curated Checklists (Tracks)**: Manage learning subjects (e.g., DSA, System Design) and track subtopics through states (`NOT_STARTED` ➜ `IN_PROGRESS` ➜ `DONE`).
-- **Timed Series & Timelines**: Group daily summaries into challenges or timelines (e.g., "100 Days of Code") to track continuous progress.
-- **Dynamic Streaks & Analytics**: Instantly computes daily consistency streaks for closed days, total tracked days, and comprehensive subtopic progress metrics.
-- **Interactive Calendar Navigator**: Browse and select dates on a monthly grid to view target checklists and summary stats for any past day.
-- **Secure Admin Gate**: Restricts daily target addition, completion toggling, ending days, and track editing to the admin (read-only access for guests).
+- **Log Your Day**: A popup form on the dashboard with the date and weekday prefilled (today or yesterday only). Add as many entries as you need, each with a description, an optional series, and optional photos (screenshots, camera shots, git history, anything).
+- **Series per entry**: Pick a series for each entry, or use "Select series for all entries" to apply one to the whole form. Leaving it blank is fine.
+- **Interactive Yearly Heatmap**: A static January-December grid (weeks run Monday to Sunday). Colour intensity reflects how many entries were logged that day. Hover or tap a day to open a popup with that day's entries and photos. A year picker at the top right switches between years (GrindLog started in 2026).
+- **Photo proof on Cloudinary**: Photos are shrunk in the browser, uploaded directly to Cloudinary with signed requests, and shown as thumbnails with a click-to-enlarge lightbox.
+- **Timed Series & Timelines**: Group entries into challenges or timelines (e.g., "100 Days of Code"). Each series page lists its entries day by day.
+- **Streaks & Stats**: Current streak (consecutive days with at least one entry), total days logged, and total entries.
+- **Secure Admin Gate**: Logging and deleting entries and managing series is admin-only. Guests get read-only access to the heatmap and series.
 
 ---
 
@@ -57,7 +54,7 @@ CLOUDINARY_API_SECRET="..."
 
 ### 3. Database Push
 
-Apply the Prisma schema migrations to your PostgreSQL instance:
+Apply the Prisma schema to your PostgreSQL instance:
 
 ```bash
 npx prisma db push
@@ -81,7 +78,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 ├── src/
 │   ├── app/
 │   │   ├── actions.ts  # Database-safe server actions
-│   │   ├── layout.tsx  # Global layout and social nav links
+│   │   ├── layout.tsx  # Global layout, header (nav, theme toggle, logout)
 │   │   ├── page.tsx    # Dashboard: stats, "Log your day" popup, heatmap with day popups
 │   │   ├── login/      # Secure password authentication
 │   │   ├── series/     # Trackable challenges & timelines (e.g. 100 Days of Code)
@@ -89,18 +86,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to see the a
 │   ├── components/     # Reusable components (Heatmap, LogDayModal, EntryList)
 │   └── lib/
 │       ├── auth.ts     # Session token and auth guards
+│       ├── cloudinary.ts # Signed uploads and image deletion (server)
+│       ├── images.ts   # Image URL transforms and client-side compression
 │       ├── links.ts    # Central social links configuration
 │       ├── prisma.ts   # Prisma client singleton with adapter-pg
-│       └── types.ts    # Common TS interfaces and types
+│       └── types.ts    # Shared TS interfaces and types
 ```
 
 ---
 
 ## 🔐 Administration
 
-To manage daily targets, close days, or edit checklists, navigate to `/login` manually. Once authenticated with your `ADMIN_PASSWORD`, you will be granted access to:
-- Adding, toggling, and deleting daily targets on the dashboard.
-- The **End Day** action to lock daily progress and calculate efficiency metrics.
-- The **Manage Tracks & Subtopics** checklists.
-- Creating and deleting progress **Series**.
-
+Navigate to `/login` manually and sign in with your `ADMIN_PASSWORD`. Once authenticated, you can:
+- Use the **Log your day** button on the dashboard to add entries and photos.
+- Delete entries (and their photos) from the heatmap day popup.
+- Create, edit, end and delete **Series**.
+- Log out with the **Logout** button next to the theme toggle in the header.
